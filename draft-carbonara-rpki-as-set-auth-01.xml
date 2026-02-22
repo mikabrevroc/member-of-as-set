@@ -391,20 +391,11 @@ RasaAuthContent ::= SEQUENCE {
             </dd>
             <dt>authorizedIn:</dt>
             <dd>
-              Each entry is an AuthorizedEntry containing:
-              <ul spacing="normal">
-                <li>
-                  <strong>asSetName:</strong> Fully qualified AS-SET name (e.g.,
-                  "AS1299:AS-TWELVE99").
-                </li>
-                <li>
-                  <strong>propagation:</strong> PropagationScope controlling
-                  transitive inclusion. <em>unrestricted</em> (default) allows
-                  nesting in other AS-SETs. <em>directOnly</em> prevents the
-                  member from being transitively included via this AS-SET
-                  (peer lock).
-                </li>
-              </ul>
+              Each entry is an AuthorizedEntry containing asSetName (fully
+              qualified AS-SET name) and propagation (PropagationScope).
+              The propagation field controls transitive inclusion:
+              unrestricted (default) allows nesting in other AS-SETs;
+              directOnly prevents transitive inclusion (peer lock).
               An empty list means the ASN refuses inclusion in any AS-SET.
             </dd>
             <dt>flags:</dt>
@@ -644,18 +635,11 @@ UnifiedRasaContent ::= SEQUENCE {
             authorizedSet). If so, verify the current AS-SET name is in
             the authorizedIn list. If not authorized, skip the nested AS-SET
             and log a warning. If authorized, check propagation:
-            <ul spacing="normal">
-              <li>
-                If propagation is "directOnly", skip the nested AS-SET
-                and log that peer lock prevented transitive inclusion.
-              </li>
-              <li>
-                If propagation is "unrestricted", recurse using the same
-                algorithm.
-              </li>
-            </ul>
-            If the parent AS-SET has doNotInherit set, include only the
-            AS-SET reference (not its members) in the expansion.
+            If propagation is "directOnly", skip the nested AS-SET
+            and log that peer lock prevented transitive inclusion.
+            If propagation is "unrestricted", recurse using the same
+            algorithm. If the parent AS-SET has doNotInherit set, include
+            only the AS-SET reference (not its members) in the expansion.
           </li>
           <li>
             For each member ASN, verify if a RASA object exists that lists
@@ -699,19 +683,11 @@ UnifiedRasaContent ::= SEQUENCE {
           <li>
             If RASA-AUTH exists: verify this AS-SET name is in the
             RASA-AUTH.authorizedIn list. If present, check the propagation
-            scope:
-            <ul spacing="normal">
-              <li>
-                If propagation is "directOnly" and this is a nested
-                expansion (not direct inclusion), exclude the ASN and log
-                that peer lock was enforced.
-              </li>
-              <li>
-                If propagation is "unrestricted" or this is direct
-                inclusion, include the ASN.
-              </li>
-            </ul>
-            If the AS-SET is not in authorizedIn, exclude the ASN.
+            scope. If propagation is "directOnly" and this is a nested
+            expansion (not direct inclusion), exclude the ASN and log
+            that peer lock was enforced. If propagation is "unrestricted"
+            or this is direct inclusion, include the ASN. If the AS-SET
+            is not in authorizedIn, exclude the ASN.
           </li>
           <li>
             If RASA-AUTH exists and strictMode is set to TRUE, exclude
