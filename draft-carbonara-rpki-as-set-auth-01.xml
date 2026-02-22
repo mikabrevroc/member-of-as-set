@@ -1779,7 +1779,7 @@ Media Type: application/rpki-rasa-auth
         </reference>
         <reference anchor="RFC6488" target="https://www.rfc-editor.org/info/rfc6488">
           <front>
-            <title>Subject Key Identifier (SKI) for RPKI</title>
+            <title>Signed Object Template for the Resource Public Key Infrastructure (RPKI)</title>
             <author fullname="G. Huston" initials="G." surname="Huston"/>
             <author fullname="G. Michaelson" initials="G." surname="Michaelson"/>
             <author fullname="R. Loomans" initials="R." surname="Loomans"/>
