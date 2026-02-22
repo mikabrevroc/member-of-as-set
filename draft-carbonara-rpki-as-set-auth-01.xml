@@ -205,99 +205,340 @@
       </section>
     </section>
 
-    <section anchor="rasa-object">
-      <name>The RASA Object</name>
+    <section anchor="rasa-objects">
+      <name>RASA Objects</name>
       <t>
-        The RPKI AS-SET Authorization (RASA) object is a cryptographically
-        signed RPKI object that authorizes the membership of an AS-SET.
+        RASA defines two separate RPKI object types that work together to
+        provide complete AS-SET authorization:
       </t>
-      <section anchor="object-format">
-        <name>Object Format</name>
+      <ol spacing="normal">
+        <li>
+          <strong>RASA-SET:</strong> Defines AS-SET membership (published by
+          AS-SET owner). Replaces the IRR as-set object.
+        </li>
+        <li>
+          <strong>RASA-AUTH:</strong> Defines which AS-SETs may include an
+          ASN (published by ASN owner). Replaces the IRR member-of-as-set
+          functionality.
+        </li>
+      </ol>
+      <t>
+        These objects are intentionally separate to maintain clear separation
+        of concerns and allow independent deployment. See <xref target="design-considerations"/>
+        for discussion of alternative unified approaches.
+      </t>
+
+      <section anchor="rasa-set-object">
+        <name>RASA-SET Object</name>
         <t>
-          The RASA object is encoded using CMS <xref target="RFC5652"/> with
-          the SignedData content type. The eContentType is:
+          The RASA-SET object defines the membership of an AS-SET. It is
+          published by the AS that owns the AS-SET (the containingAS).
         </t>
-        <sourcecode type="text">
-          id-rpki-rasa OBJECT IDENTIFIER ::= { id-rpki 42 }
-        </sourcecode>
-        <t>
-          The RASA content has the following ASN.1 structure:
-        </t>
-        <sourcecode type="text">
-RasaContent ::= SEQUENCE {
+        <section anchor="rasa-set-format">
+          <name>Object Format</name>
+          <t>
+            The RASA-SET object is encoded using CMS <xref target="RFC5652"/> with
+            the SignedData content type. The eContentType is:
+          </t>
+          <sourcecode type="text">
+id-rpki-rasa-set OBJECT IDENTIFIER ::= { id-rpki 42 1 }
+          </sourcecode>
+          <t>
+            The RASA-SET content has the following ASN.1 structure:
+          </t>
+          <sourcecode type="text">
+RasaFlags ::= BIT STRING {
+    doNotInherit(0),
+    authoritative(1)
+}
+
+RasaAuthFlags ::= BIT STRING {
+    strictMode(0)
+}
+          </sourcecode>
+          <sourcecode type="text">
+RasaSetContent ::= SEQUENCE {
   version          [0] INTEGER DEFAULT 0,
   asSetName            UTF8String,
   containingAS         ASID,
-  irrSource            UTF8String OPTIONAL,
   members              SEQUENCE OF ASID,
+  nestedSets           SEQUENCE OF UTF8String OPTIONAL,
+  irrSource            UTF8String OPTIONAL,
   flags                RasaFlags OPTIONAL,
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime
 }
-        </sourcecode>
+          </sourcecode>
+        </section>
+        <section anchor="rasa-set-fields">
+          <name>Field Definitions</name>
+          <dl spacing="normal">
+            <dt>version:</dt>
+            <dd>
+              The version of the RASA-SET format. This document defines version 0.
+            </dd>
+            <dt>asSetName:</dt>
+            <dd>
+              The name of the AS-SET (e.g., "AS1299:AS-TWELVE99"). MUST start
+              with "AS-" per RFC2622.
+            </dd>
+            <dt>containingAS:</dt>
+            <dd>
+              The ASN of the AS that owns this AS-SET. Must match the AS in
+              hierarchical names (e.g., 1299 for AS1299:AS-TWELVE99).
+            </dd>
+            <dt>members:</dt>
+            <dd>
+              List of ASNs that are members of this AS-SET. Each ASID must be
+              unique and sorted. The containingAS MAY be included.
+            </dd>
+            <dt>nestedSets:</dt>
+            <dd>
+              OPTIONAL list of other AS-SET names that are members of this
+              AS-SET. Enables recursive AS-SET expansion. Each nested set
+              will be resolved by looking up its RASA-SET (or falling back
+              to IRR if no RASA-SET exists).
+            </dd>
+            <dt>irrSource:</dt>
+            <dd>
+              OPTIONAL authoritative IRR database for this AS-SET (e.g.,
+              "RADB", "RIPE"). Prevents namespace ambiguity.
+            </dd>
+            <dt>flags:</dt>
+            <dd>
+              Optional flags: doNotInherit (prevent transitive inclusion),
+              authoritative (RASA-SET replaces IRR data).
+            </dd>
+            <dt>notBefore, notAfter:</dt>
+            <dd>
+              Validity period per RPKI policies.
+            </dd>
+          </dl>
+        </section>
       </section>
-      <section anchor="field-definitions">
-        <name>Field Definitions</name>
-        <dl spacing="normal">
-          <dt>version:</dt>
-          <dd>
-            The version of the RASA format. This document defines version 0.
-            Future versions may add fields or change semantics.
-          </dd>
-          <dt>asSetName:</dt>
-          <dd>
-            The name of the AS-SET being authorized. MUST start with the
-            prefix "AS-" followed by at least one character (e.g.,
-            "AS6939:AS-HURRICANE", "AS15169:AS-GOOGLE"). Hierarchical names use the format
-            "ASN:AS-NAME" (e.g., "AS1299:AS-TWELVE99") where the ASN prefix
-            identifies the owning autonomous system. For hierarchical names,
-            the containingAS must match the ASN in the hierarchical prefix.
-            This requirement aligns with RFC2622 Section 5 which reserves
-            names starting with "as-" for AS-SETs, providing namespace
-            separation between AS-SETs and autonomous system numbers.
-          </dd>
-          <dt>containingAS:</dt>
-          <dd>
-            The autonomous system number of the AS that owns the AS-SET.
-            This AS must be the subject of the RPKI certificate used to sign
-            the RASA object.
-          </dd>
-          <dt>members:</dt>
-          <dd>
-            A list of autonomous system numbers that are members of this
-            AS-SET. Each ASID must be unique and sorted in ascending order.
-            The containingAS MAY be included in members if it is also a
-            member of the AS-SET.
-          </dd>
-          <dt>irrSource:</dt>
-          <dd>
-            The authoritative IRR database source for this AS-SET. When
-            specified, tools MUST query only this IRR database for the
-            AS-SET definition. Standard values are "RIPE", "RADB",
-            "ARIN", "APNIC", "AFRINIC", "LACNIC". This field is OPTIONAL;
-            when absent, tools query all configured IRR databases (legacy
-            behavior). This field prevents namespace ambiguity attacks
-            where the same AS-SET name exists in multiple IRR databases
-            with different members.
-          </dd>
-          <dt>flags:</dt>
-          <dd>
-            Optional flags controlling AS-SET behavior. doNotInherit: When
-            set, this AS-SET can be referenced by other AS-SETs, but its
-            members are not transitively inherited. This prevents the
-            "chain of trust" attack where including this AS-SET in a
-            malicious AS-SET would also include all members. authoritative:
-            When set, this RASA is the ONLY source of truth for the AS-SET.
-            Tools MUST NOT query IRR for this AS-SET; the RASA member list
-            completely replaces any IRR data. The IRR object may still exist
-            but is treated as deprecated/non-authoritative.
-          </dd>
-          <dt>notBefore, notAfter:</dt>
-          <dd>
-            The validity period of the RASA object. These times are
-            interpreted according to RPKI policies.
-          </dd>
-        </dl>
+
+      <section anchor="rasa-auth-object">
+        <name>RASA-AUTH Object</name>
+        <t>
+          The RASA-AUTH object contains an authorization statement from
+          an autonomous system or AS-SET owner, granting permission for
+          inclusion in specified parent AS-SETs. It is published by the ASN or
+          AS-SET owner to control inclusion authorization.
+        </t>
+        <section anchor="rasa-auth-format">
+          <name>Object Format</name>
+          <t>
+            The RASA-AUTH object is encoded using CMS <xref target="RFC5652"/> with
+            the SignedData content type. The eContentType is:
+          </t>
+          <sourcecode type="text">
+id-rpki-rasa-auth OBJECT IDENTIFIER ::= { id-rpki 42 2 }
+          </sourcecode>
+          <t>
+            The RASA-AUTH content has the following ASN.1 structure:
+          </t>
+          <sourcecode type="text">
+RasaAuthContent ::= SEQUENCE {
+  version          [0] INTEGER DEFAULT 0,
+  authorizedEntity CHOICE {
+     authorizedAS        ASID,
+     authorizedSet       UTF8String
+  },
+  authorizedIn         SEQUENCE OF UTF8String,
+  flags                RasaAuthFlags OPTIONAL,
+  notBefore            GeneralizedTime,
+  notAfter             GeneralizedTime
+}
+          </sourcecode>
+        </section>
+        <section anchor="rasa-auth-fields">
+          <name>Field Definitions</name>
+          <dl spacing="normal">
+            <dt>version:</dt>
+            <dd>
+              The version of the RASA-AUTH format. This document defines
+              version 0 (authorizedAS only) and version 1 (CHOICE support).
+              Version 1 MUST include the authorizedEntity field.
+            </dd>
+            <dt>authorizedEntity:</dt>
+            <dd>
+              <t>CHOICE between authorizedAS and authorizedSet:</t>
+              <ul spacing="normal">
+                <li>
+                  <strong>authorizedAS:</strong> The ASN that is authorizing
+                  inclusion. Use for individual ASNs.
+                </li>
+                <li>
+                  <strong>authorizedSet:</strong> The AS-SET name that is
+                  authorizing inclusion. Use for AS-SETs that may be included
+                  in other AS-SETs.
+                </li>
+              </ul>
+            </dd>
+            <dt>authorizedIn:</dt>
+            <dd>
+              Each entry is a fully qualified AS-SET name (e.g.,
+              "AS1299:AS-TWELVE99"). An empty list means the ASN refuses
+              inclusion in any AS-SET.
+            </dd>
+            <dt>flags:</dt>
+            <dd>
+              Optional flags controlling authorization behavior.
+              strictMode: If set, AS-SETs NOT in this list MUST NOT include
+              this ASN (reject rather than warn).
+            </dd>
+            <dt>notBefore, notAfter:</dt>
+            <dd>
+              Validity period per RPKI policies.
+            </dd>
+          </dl>
+        </section>
+      </section>
+
+      <section anchor="design-considerations">
+        <name>Design Considerations: Unified vs. Separate Objects</name>
+        <t>
+          This specification defines two separate RPKI object types (RASA-SET
+          and RASA-AUTH) rather than a single unified object. This section
+          discusses the rationale and alternative approaches.
+        </t>
+        <section anchor="separate-objects-approach">
+          <name>Separate Objects (This Specification)</name>
+          <t>
+            RASA-SET and RASA-AUTH are published by different parties:
+          </t>
+          <ul spacing="normal">
+            <li>RASA-SET: Published by AS-SET owner (e.g., AS1299)</li>
+            <li>RASA-AUTH: Published by ASN owner (e.g., AS64496)</li>
+          </ul>
+          <t>
+            <strong>Pros:</strong>
+          </t>
+          <ul spacing="normal">
+            <li>
+              Clear separation of concerns: AS-SET owner controls membership,
+              ASN owner controls inclusion authorization
+            </li>
+            <li>
+              Independent deployment: Networks can publish RASA-AUTH without
+              needing to create AS-SETs
+            </li>
+            <li>
+              Smaller objects: Each object type is focused and minimal
+            </li>
+            <li>
+              Easier validation: Tools can validate each object type separately
+            </li>
+            <li>
+              Aligns with existing IRR model (as-set vs. member-of-as-set)
+            </li>
+          </ul>
+          <t>
+            <strong>Cons:</strong>
+          </t>
+          <ul spacing="normal">
+            <li>
+              Two object types to implement and deploy
+            </li>
+            <li>
+              Potential inconsistency: AS-SET claims member, but member
+              doesn't authorize (requires conflict resolution)
+            </li>
+            <li>
+              More complex validator logic (must look up both types)
+            </li>
+          </ul>
+        </section>
+        <section anchor="unified-object-approach">
+          <name>Alternative: Unified Object</name>
+          <t>
+            An alternative design would combine both functions into a single
+            RASA object with optional fields:
+          </t>
+          <sourcecode type="text">
+UnifiedRasaContent ::= SEQUENCE {
+  version          [0] INTEGER DEFAULT 0,
+  objectType       ENUMERATED { asSet(0), asnAuth(1) },
+  identifier       UTF8String,     -- asSetName or authorizedAS
+  containingAS     ASID,           -- for AS-SET objects
+  members          SEQUENCE OF ASID OPTIONAL,
+  authorizedIn     SEQUENCE OF UTF8String OPTIONAL,
+  -- ... other fields
+}
+          </sourcecode>
+          <t>
+            <strong>Pros:</strong>
+          </t>
+          <ul spacing="normal">
+            <li>
+              Single object type to implement and validate
+            </li>
+            <li>
+              Simpler IANA registration (one OID, one file extension)
+            </li>
+            <li>
+              Less object proliferation in RPKI repositories
+            </li>
+            <li>
+              Can represent "I authorize AS-SET X and these are its members"
+              in one signed object (for AS-SETs containing only your own ASNs)
+            </li>
+          </ul>
+          <t>
+            <strong>Cons:</strong>
+          </t>
+          <ul spacing="normal">
+            <li>
+              Blurred authorization boundaries: Single object published by
+              one party controls both membership and authorization
+            </li>
+            <li>
+              Larger objects: Must include all fields even when only one
+              function is needed
+            </li>
+            <li>
+              Complex validation: Must check objectType and conditional fields
+            </li>
+            <li>
+              Less flexible: ASN owner cannot authorize AS-SET inclusion
+              without creating a full AS-SET object
+            </li>
+            <li>
+              Security concern: AS-SET owner could potentially claim
+              authorization that ASN owner didn't intend
+            </li>
+          </ul>
+        </section>
+        <section anchor="design-recommendation">
+          <name>Design Recommendation</name>
+          <t>
+            The separate objects approach is RECOMMENDED because:
+          </t>
+          <ol spacing="normal">
+            <li>
+              It maintains cryptographic separation of control: only the ASN
+              owner can publish RASA-AUTH, preventing AS-SET owners from
+              forging inclusion authorization.
+            </li>
+            <li>
+              It allows incremental deployment: content providers can publish
+              RASA-AUTH immediately, even before RASA-SET adoption.
+            </li>
+            <li>
+              It aligns with the principle of least privilege: each object
+              grants only the specific authorization needed.
+            </li>
+            <li>
+              It mirrors the successful IRR model where as-set and
+              member-of-as-set are separate concepts.
+            </li>
+          </ol>
+          <t>
+            Future specifications MAY define a unified object type if
+            operational experience shows the separate objects create
+            unacceptable overhead.
+          </t>
+        </section>
       </section>
     </section>
 
@@ -312,11 +553,13 @@ RasaContent ::= SEQUENCE {
           The RASA object MUST be validated according to <xref target="RFC6488"/>:
         </t>
         <ol spacing="normal">
-          <li>Verify the CMS signature using the signer's certificate</li>
-          <li>Verify the certificate chain to a trust anchor</li>
-          <li>Verify the certificate's subject matches the containingAS</li>
-          <li>Verify the validity period (notBefore, notAfter)</li>
-          <li>Check for revocation using CRLs or OCSP</li>
+          <li>
+            Verify the CMS signature and certificate chain per <xref target="RFC6488"/>.
+          </li>
+          <li>
+            Verify the certificate's subject matches the containingAS (for RASA-SET)
+            or authorizedAS/authorizedSet (for RASA-AUTH).
+          </li>
         </ol>
       </section>
       <section anchor="content-validation">
@@ -370,8 +613,12 @@ RasaContent ::= SEQUENCE {
             selection logic (irrSource if present, otherwise all databases).
           </li>
           <li>
-            For each nested AS-SET in the member list, recurse using the
-            same algorithm. If the parent AS-SET has doNotInherit set,
+            For each nested AS-SET in the member list, first verify if
+            the nested AS-SET has published a RASA-AUTH (version 1 with
+            authorizedSet). If so, verify the current AS-SET name is in
+            the authorizedIn list. If not authorized, skip the nested AS-SET
+            and log a warning. If authorized (or no RASA-AUTH exists), recurse
+            using the same algorithm. If the parent AS-SET has doNotInherit set,
             include only the AS-SET reference (not its members) in the
             expansion.
           </li>
@@ -388,6 +635,200 @@ RasaContent ::= SEQUENCE {
           members. When specified, tools MUST NOT query other IRR databases.
         </t>
     </section>
+    </section>
+
+    <section anchor="conflict-resolution">
+      <name>Conflict Resolution</name>
+      <t>
+        When both RASA-SET and RASA-AUTH objects exist for the same
+        AS-SET membership claim, validators MUST apply the following
+        resolution rules to determine the authoritative membership list.
+      </t>
+
+      <section anchor="priority-rules">
+        <name>Priority Rules</name>
+        <t>
+          RASA-AUTH (member's intent) takes precedence over RASA-SET
+          (owner's claim). The rationale is that an AS should have
+          control over which AS-SETs include it, as inclusion affects
+          their routing security.
+        </t>
+        <t>
+          <strong>Resolution Algorithm:</strong>
+        </t>
+        <ol spacing="normal">
+          <li>
+            For each member ASN claimed in RASA-SET.members, check if a
+            RASA-AUTH object exists signed by that ASN.
+          </li>
+          <li>
+            If RASA-AUTH exists: verify this AS-SET name is in the
+            RASA-AUTH.authorizedIn list. If present, include the ASN.
+            If absent, exclude the ASN (member has not authorized).
+          </li>
+          <li>
+            If RASA-AUTH exists and strictMode is set to TRUE, exclude
+            the ASN and log a security event (unauthorized inclusion).
+          </li>
+          <li>
+            If RASA-AUTH exists and strictMode is FALSE, exclude the
+            ASN but log a warning (member may not want inclusion).
+          </li>
+          <li>
+            If no RASA-AUTH exists, include the ASN if the AS-SET
+            owner's RASA-SET is valid.
+          </li>
+        </ol>
+      </section>
+
+      <section anchor="conflict-examples">
+        <name>Conflict Examples</name>
+        <t>
+          Example 1: Member authorizes inclusion
+        </t>
+        <sourcecode type="text">
+RASA-SET (AS2914 publishes):
+  asSetName: "AS2914:AS-GLOBAL"
+  members: [AS64496, AS64497, AS15169]
+
+RASA-AUTH (AS15169 publishes, version 0):
+  version: 0
+  authorizedEntity:
+    authorizedAS: 15169
+  authorizedIn: ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99"]
+  strictMode: FALSE
+
+Result: AS15169 is INCLUDED (authorized)
+        </sourcecode>
+        <t>
+          Example 2: Member does not authorize inclusion
+        </t>
+        <sourcecode type="text">
+RASA-SET (AS-EVIL publishes):
+  asSetName: "AS-EVIL:CUSTOMERS"
+  members: [AS64496, AS15169]
+
+RASA-AUTH (AS15169 publishes, version 0):
+  version: 0
+  authorizedEntity:
+    authorizedAS: 15169
+  authorizedIn: ["AS2914:AS-GLOBAL"]
+  strictMode: TRUE
+
+Result: AS15169 is EXCLUDED (not authorized), security event logged
+        </sourcecode>
+        <t>
+          Example 3: No RASA-AUTH from member
+        </t>
+        <sourcecode type="text">
+RASA-SET (AS2914 publishes):
+  asSetName: "AS2914:AS-GLOBAL"
+  members: [AS64496, AS64497, AS398465]
+
+RASA-AUTH (AS398465): None published
+
+Result: AS398465 is INCLUDED (no objection from member)
+        </sourcecode>
+        <t>
+          Example 4: AS-SET authorization (version 1 CHOICE)
+        </t>
+        <sourcecode type="text">
+RASA-SET (AS2914 publishes):
+  asSetName: "AS2914:AS-GLOBAL"
+  nestedSets: ["AS1299:AS-TWELVE99"]
+
+RASA-AUTH (AS1299 publishes, version 1):
+  version: 1
+  authorizedEntity:
+    authorizedSet: "AS1299:AS-TWELVE99"
+  authorizedIn: ["AS2914:AS-GLOBAL"]
+  strictMode: TRUE
+
+Result: AS1299:AS-TWELVE99 is INCLUDED (authorized)
+
+Example 5: AS-SET authorization denied
+RASA-SET (AS-EVIL publishes):
+  asSetName: "AS-EVIL:CUSTOMERS"
+  nestedSets: ["AS1299:AS-TWELVE99"]
+
+RASA-AUTH (AS1299 publishes, version 1):
+  version: 1
+  authorizedEntity:
+    authorizedSet: "AS1299:AS-TWELVE99"
+  authorizedIn: ["AS2914:AS-GLOBAL"]
+  strictMode: TRUE
+
+Result: AS1299:AS-TWELVE99 is EXCLUDED (not authorized in AS-EVIL)
+        </sourcecode>
+    </section>
+
+    </section>
+
+    <section anchor="circular-detection">
+      <name>Circular Reference Detection</name>
+      <t>
+        RASA-SET objects support nested AS-SET references via the nestedSets
+        field. This creates the potential for circular references if an
+        AS-SET includes itself, directly or indirectly.
+      </t>
+      <t>
+        Validators MUST detect and handle circular references to prevent
+        infinite loops during AS-SET expansion.
+      </t>
+
+      <section anchor="detection-algorithm">
+        <name>Detection Algorithm</name>
+        <t>
+          During AS-SET expansion, validators MUST maintain a "seen" set
+          containing all AS-SET names encountered in the current expansion
+          chain.
+        </t>
+        <ol spacing="normal">
+          <li>
+            Initialize an empty set 'seen' before expanding an AS-SET.
+          </li>
+          <li>
+            Before expanding any AS-SET (via RASA-SET or IRR), check if
+            its name is already in 'seen'.
+          </li>
+          <li>
+            If yes: circular reference detected. Stop expanding this
+            branch and log a warning. Do not include any members from
+            the circular AS-SET.
+          </li>
+          <li>
+            If no: add the AS-SET name to 'seen' and continue expansion.
+          </li>
+          <li>
+            When backtracking from a nested AS-SET, remove its name from
+            'seen' to allow valid reuse in different branches.
+          </li>
+        </ol>
+      </section>
+
+      <section anchor="circular-example">
+        <name>Circular Reference Example</name>
+        <sourcecode type="text">
+RASA-SET (AS2914):
+  asSetName: "AS2914:AS-GLOBAL"
+  members: [AS64496]
+  nestedSets: ["AS64496:AS-SET"]
+
+RASA-SET (AS64496):
+  asSetName: "AS64496:AS-SET"
+  members: [AS398465]
+  nestedSets: ["AS2914:AS-GLOBAL"]  -- circular!
+
+Expansion trace:
+1. Start: AS2914:AS-GLOBAL (seen={})
+2. Add AS2914:AS-GLOBAL to seen
+3. Expand AS64496:AS-SET (seen={AS2914:AS-GLOBAL})
+4. Add AS64496:AS-SET to seen
+5. Attempt to expand AS2914:AS-GLOBAL
+6. Detect: AS2914:AS-GLOBAL already in seen
+7. Log warning, stop expansion, return [AS64496] only
+        </sourcecode>
+      </section>
     </section>
 
     <section anchor="use-cases">
@@ -620,9 +1061,104 @@ RASA Object (signed by AS6939):
         <t>
           ASPA synthesis is complementary to RASA. Operators may use ASPA-derived
           AS-SETs for provider-customer relationships while using RASA for
-          complex multi-lateral groupings. Further research is needed to define
-          specific algorithms for ASPA-based AS-SET generation.
+          complex multi-lateral groupings.
         </t>
+
+        <section anchor="aspa-algorithm">
+          <name>ASPA Synthesis Algorithm</name>
+          <t>
+            The following algorithm synthesizes an AS-SET from ASPA objects:
+          </t>
+          <sourcecode type="text">
+Algorithm: Synthesize AS-SET from ASPA
+Input: providerAS (the AS whose customers to find)
+Output: memberSet (set of ASNs listing providerAS as provider)
+
+1. Query RPKI for all valid ASPA objects
+2. Initialize empty memberSet
+3. For each ASPA object in RPKI:
+   a. Extract customerAS from ASPA
+   b. Extract providerAS list from ASPA
+   c. If providerAS is in the provider list:
+      i. Add customerAS to memberSet
+4. Return memberSet
+
+Example: Synthesize AS2914's customer AS-SET
+Input: providerAS = 2914
+
+ASPA objects found:
+  - AS64496: providers = [2914, 1299]
+  - AS64497: providers = [2914, 3356]
+  - AS64498: providers = [1299, 3356]
+  - AS64499: providers = [2914]
+
+Result: memberSet = {64496, 64497, 64499}
+  (AS64498 not included - doesn't list 2914 as provider)
+
+Generated AS-SET name: "RPKI::AS2914:AS-CUSTOMERS"
+          </sourcecode>
+        </section>
+
+        <section anchor="aspa-rasa-integration">
+          <name>ASPA-RASA Integration Model</name>
+          <t>
+            The complementary relationship between ASPA synthesis and RASA can
+            be expressed as follows:
+          </t>
+          <ul spacing="normal">
+            <li>
+              <strong>ASPA-derived AS-SETs</strong> represent provider-customer
+              relationships discovered from ASPA objects. These are dynamic -
+              membership changes as ASPAs are published or withdrawn.
+            </li>
+            <li>
+              <strong>RASA objects</strong> represent explicit AS-SET membership
+              declarations with additional metadata (flags, authorization).
+            </li>
+            <li>
+              <strong>Unified view</strong>: A validator MAY combine both sources,
+              using RASA objects for AS-SETs that have them, and ASPA-synthesized
+              AS-SETs for provider relationships.
+            </li>
+          </ul>
+          <t>
+            <strong>RIPE-731 Analogy:</strong> Just as RIPE-731 uses ROAs to
+            validate route objects (origin AS + prefix), RASA uses ASPAs to
+            validate AS-SET membership (provider AS + customer AS). The key
+            insight is that existing RPKI objects can authenticate IRR-style
+            groupings without requiring new object types for every use case.
+          </t>
+        </section>
+
+        <section anchor="aspa-limitations-detailed">
+          <name>Detailed ASPA Synthesis Limitations</name>
+          <t>
+            While ASPA synthesis provides immediate value, operators should
+            understand its constraints:
+          </t>
+          <ul spacing="normal">
+            <li>
+              <strong>Publication requirement:</strong> Only ASNs that have
+              published ASPA objects can be discovered. Transit providers must
+              educate customers about ASPA publication.
+            </li>
+            <li>
+              <strong>Multi-homing complexity:</strong> A customer with multiple
+              providers appears in multiple synthesized AS-SETs. This is
+              semantically correct but may be operationally complex.
+            </li>
+            <li>
+              <strong>No transitive closure:</strong> Unlike RASA nestedSets,
+              ASPA synthesis does not naturally support nested groupings. Each
+              synthesized AS-SET contains only direct customers.
+            </li>
+            <li>
+              <strong>Versioning challenges:</strong> ASPA objects have their
+              own validity periods separate from any AS-SET interpretation.
+              Operators must track ASPA expiry independently.
+            </li>
+          </ul>
+        </section>
       </section>
     </section>
     <section anchor="operational-guidance">
@@ -708,6 +1244,147 @@ RASA Object (signed by AS6939):
             RASA validation.
           </li>
         </ul>
+      </section>
+      <section anchor="operational-examples">
+        <name>Detailed Operational Examples</name>
+        
+        <section anchor="example-tier1-customer">
+          <name>Example 1: Tier-1 Provider Customer AS-SET</name>
+          <t>
+            NTT (AS2914) maintains AS2914:AS-GLOBAL containing their customer
+            ASNs. Here's the complete operational workflow:
+          </t>
+          <sourcecode type="text">
+Step 1: NTT publishes RASA-SET
+  asSetName:     "AS2914:AS-GLOBAL"
+  containingAS:  2914
+  members:       [AS64496, AS64497, AS64498, AS64499, AS64500]
+  nestedSets:    ["AS64496:AS-SET", "AS64497:AS-SET"]
+  flags:         authoritative=TRUE, doNotInherit=FALSE
+  irrSource:     "RADB"
+  validity:      2024-01-01 to 2025-01-01
+
+Step 2: Customer AS64496 publishes RASA-AUTH
+  authorizedAS:  64496
+  authorizedIn:  ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99"]
+  strictMode:    FALSE
+  validity:      2024-01-01 to 2025-01-01
+
+Step 3: Customer AS64497 publishes RASA-AUTH  
+  authorizedAS:  64497
+  authorizedIn:  ["AS2914:AS-GLOBAL"]
+  strictMode:    TRUE
+  validity:      2024-01-01 to 2025-01-01
+
+Step 4: Customer AS64498 does NOT publish RASA-AUTH
+  (No objection, included by default)
+
+Step 5: Attacker AS-EVIL attempts unauthorized inclusion
+  RASA-SET (AS-EVIL):
+    asSetName: "AS-EVIL:CUSTOMERS"
+    members:   [AS64496, AS64497, AS2914]  -- attempting to include NTT!
+
+Result: AS2914 excluded (AS-EVIL not in AS2914's authorizedIn list)
+        </sourcecode>
+        </section>
+        
+        <section anchor="example-content-protection">
+          <name>Example 2: Content Provider Multi-AS Protection</name>
+          <t>
+            Google operates multiple ASNs and wants to control which Tier-1
+            providers can include them:
+          </t>
+          <sourcecode type="text">
+Google publishes RASA-SET for their aggregated AS-SET:
+  asSetName:     "AS15169:AS-GOOGLE"
+  containingAS:  15169
+  members:       [15169, 16509, 36040, 36384, 139190]
+  flags:         authoritative=TRUE, doNotInherit=TRUE
+
+Google publishes RASA-AUTH for each ASN:
+  authorizedAS:  15169
+  authorizedIn:  ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99", 
+                  "AS6453:AS-TATA", "AS3356:AS-LEVEL3"]
+  strictMode:    TRUE
+
+  authorizedAS:  16509  (AWS)
+  authorizedIn:  ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99"]
+  strictMode:    TRUE
+
+Result: Google's AS-SET can only be expanded by authorized Tier-1s.
+Any attempt by malicious AS-SETs to include AS15169:AS-GOOGLE will
+stop at the AS-SET reference (doNotInherit=TRUE) without revealing
+the actual Google ASNs.
+        </sourcecode>
+        </section>
+        
+        <section anchor="example-validator-logic">
+          <name>Example 3: Complete Validator Decision Flow</name>
+          <t>
+            A router configuration generator encounters AS2914:AS-GLOBAL:
+          </t>
+          <sourcecode type="text">
+Validator processing AS2914:AS-GLOBAL:
+
+1. Query RPKI for RASA-SET "AS2914:AS-GLOBAL"
+   Found: Valid RASA-SET from AS2914
+   authoritative=TRUE, members=[64496, 64497, 64498]
+
+2. For each member, check RASA-AUTH:
+   
+   Member AS64496:
+   - Query RPKI for RASA-AUTH from AS64496
+   - Found: authorizedIn contains "AS2914:AS-GLOBAL"
+   - Decision: INCLUDE (explicitly authorized)
+   
+   Member AS64497:
+   - Query RPKI for RASA-AUTH from AS64497
+   - Found: authorizedIn does NOT contain "AS2914:AS-GLOBAL"
+   - strictMode=FALSE
+   - Decision: EXCLUDE (log warning)
+   
+   Member AS64498:
+   - Query RPKI for RASA-AUTH from AS64498
+   - Not found
+   - Decision: INCLUDE (no objection)
+
+3. Process nestedSets (if doNotInherit=FALSE):
+   - For each nested AS-SET, repeat steps 1-2 recursively
+   - Track seen sets to detect circular references
+
+4. Final member list: [AS64496, AS64498]
+        </sourcecode>
+        </section>
+        
+        <section anchor="example-transition">
+          <name>Example 6: Partial Deployment Scenario</name>
+          <t>
+            During transition, some AS-SETs have RASA and others don't:
+          </t>
+          <sourcecode type="text">
+Operator wants to expand AS-HURRICANE (AS6939):
+
+Scenario A: AS6939 has published RASA-SET
+  - Query RPKI: Found valid RASA-SET
+  - authoritative=TRUE
+  - Action: Use RASA member list, ignore IRR
+  - IRR AS-HURRICANE treated as deprecated
+
+Scenario B: AS6939 has NOT published RASA-SET
+  - Query RPKI: No RASA found
+  - Action: Query IRR for AS-HURRICANE
+  - Log: "Falling back to IRR for AS-HURRICANE"
+  - Continue with IRR expansion
+
+Scenario C: Some members have RASA-AUTH, others don't
+  - AS6939:AS-HURRICANE contains [AS2914, AS64496, AS-UNKNOWN]
+  - AS2914: No RASA-AUTH found → included
+  - AS64496: Has RASA-AUTH, authorizes AS6939 → included
+  - AS-UNKNOWN: Nested AS-SET, no RASA → expanded from IRR
+
+Result: Mixed RASA/IRR expansion during transition period.
+        </sourcecode>
+        </section>
       </section>
     </section>
     <section anchor="asgroup-relationship">
@@ -986,19 +1663,25 @@ RASA Object (signed by AS6939):
         This document requests IANA to:
       </t>
       <t>
-        1. Register the RPKI Object Type for RASA:
+        1. Register two RPKI Object Types:
       </t>
       <sourcecode type="text">
-Object Type: RASA (RPKI AS-SET Authorization)
-OID: { id-rpki 42 }
+Object Type: RASA-SET (RPKI AS-SET Membership)
+OID: { id-rpki 42 1 }
+Reference: This document
+Object Type: RASA-AUTH (RPKI AS-SET Authorization)
+OID: { id-rpki 42 2 }
 Reference: This document
       </sourcecode>
       <t>
-        2. Register the file extension and media type:
+        2. Register file extensions and media types:
       </t>
       <sourcecode type="text">
-File Extension: .rasa
-Media Type: application/rpki-rasa
+File Extension: .rasa-set
+Media Type: application/rpki-rasa-set
+
+File Extension: .rasa-auth
+Media Type: application/rpki-rasa-auth
       </sourcecode>
     </section>
   </middle>
@@ -1077,7 +1760,12 @@ Media Type: application/rpki-rasa
         <reference anchor="I-D.member-of-as-set">
           <front>
             <title>Membership Verification for Autonomous System Sets</title>
-            <author fullname="S. Ytti" initials="S." surname="Ytti"/>
+            <author fullname="M. Abrahamsson" initials="M." surname="Abrahamsson">
+              <organization>Swedish University Network</organization>
+              <address>
+                <email>swmike@swm.pp.se</email>
+              </address>
+            </author>
             <date year="2026"/>
           </front>
           <seriesInfo name="Internet-Draft" value="draft-carbonara-irr-member-of-as-set"/>
