@@ -793,6 +793,31 @@ RASA-AUTH (AS1299 publishes, version 1):
 
 Result: AS1299:AS-TWELVE99 is EXCLUDED (not authorized in AS-EVIL)
         </sourcecode>
+        <t>
+          Example 6: Peer Lock (directOnly propagation)
+        </t>
+        <sourcecode type="text">
+RASA-SET (AS2914 publishes):
+  asSetName: "AS2914:AS-GLOBAL"
+  members: [AS15169]
+  nestedSets: ["AS-UPSTREAM:AS-ALL"]  -- AS2914's upstream
+
+RASA-AUTH (AS15169 publishes, version 2):
+  version: 2
+  authorizedEntity:
+    authorizedAS: 15169
+  authorizedIn:
+    - asSetName: "AS2914:AS-GLOBAL"
+      propagation: directOnly    -- Peer lock!
+  strictMode: TRUE
+
+Scenario 1: NTT's direct filters
+  Result: AS15169 is INCLUDED (direct customer)
+
+Scenario 2: NTT's upstream includes AS2914:AS-GLOBAL
+  Result: AS15169 is EXCLUDED (peer lock prevents transit)
+  Action: Upstream cannot see Google via AS2914's AS-SET
+        </sourcecode>
     </section>
 
     </section>
