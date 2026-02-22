@@ -286,8 +286,8 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
        owner).  Replaces the IRR as-set object.
 
    2.  *RASA-AUTH:* Defines which AS-SETs may include an ASN or AS-SET
-       (published by ASN or AS-SET owner).  Replaces the IRR member-of-
-       as-set functionality.
+       (published by ASN or AS-SET owner).  Provides cryptographic
+       authorization for AS-SET inclusion.
 
    These objects are intentionally separate to maintain clear separation
    of concerns and allow independent deployment.  The two-object design
