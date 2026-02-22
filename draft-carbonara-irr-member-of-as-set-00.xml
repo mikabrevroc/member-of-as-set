@@ -251,8 +251,13 @@ member-of: AS3245:CUSTOMERS
         </t>
         <t>
           If a member-of-as-set object exists for an autonomous system or AS-SET,
-          verification tools <bcp14>SHOULD</bcp14> use the complete list of
-          AS-SET names in the member-of attribute to determine authorization.
+          the member-of attribute contains an <bcp14>exhaustive whitelist</bcp14>
+          of AS-SETs in which the system or AS-SET authorizes inclusion.
+          Verification tools <bcp14>MUST</bcp14> only include the system or AS-SET
+          in expansions of AS-SETs explicitly listed in the member-of attribute.
+          If an AS-SET expansion includes the system or AS-SET but that AS-SET is
+          <bcp14>NOT</bcp14> listed in the member-of attribute, verification
+          tools <bcp14>MUST</bcp14> prune the system or AS-SET from the expansion.
         </t>
         <t>
           If no member-of-as-set object exists for an autonomous system or AS-SET,
