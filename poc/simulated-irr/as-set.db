@@ -12,6 +12,44 @@ members: AS64499
 mnt-by: MNT-NTT-CUSTOMER
 source: NTTCOM
 
+# AS-SET: AS1299:AS-TWELVE99
+# Description: Arelion (Twelve99) customer AS-SET (from RIPE)
+descr: Arelion, Twelve99, f/k/a Telia Carrier
+members: AS1299:AS-TWELVE99-V4
+members: AS1299:AS-TWELVE99-V6
+mnt-by: Twelve99-IRR-MNT
+source: RIPE
+
+# AS-SET: AS2914:AS-GLOBAL
+# Description: NTT Global IP Network transit customers (real AS-SET from NTTCOM)
+descr: NTT Global IP Network transit v4 customers
+members: AS2914
+members: AS3949
+members: AS2914:AS-US
+members: AS2914:AS-ASIA
+members: AS2914:AS-EUROPE
+members: AS2914:AS-SA
+mnt-by: MAINT-NTTCOM-BB
+source: NTTCOM
+
+# AS-SET: AS-MFNX
+# Description: Zayo customer AS-SET (from RADB)
+descr: ASNs announced by Zayo & customers
+members: AS10323
+members: AS10355
+members: AS6461
+mnt-by: MNT-MFNX
+source: RADB
+
+# AS-SET: AS-HURRICANE
+# Description: Hurricane Electric customer AS-SET (from RADB)
+descr: HE.NET AS MACRO
+members: AS6939
+members: AS2,AS3,AS5
+members: AS3245
+mnt-by: MAINT-AS6939
+source: RADB
+
 # AS-SET: AS-MALICIOUS-CUSTOMER
 # Description: A malicious customer trying to hijack
 # This customer has legit AS64496 but adds unauthorized ASNs
@@ -21,9 +59,16 @@ members: AS64498
 members: AS64499
 # ATTACK 1: Add Google to steal their traffic
 members: AS15169
-# ATTACK 2: Add Level3 to appear as tier-1
-members: AS3356
-# ATTACK 3: Add Microsoft
+# ATTACK 2: Add Microsoft
 members: AS8075
+# ATTACK 3: Add NTT's global AS-SET (massive leak potential)
+members: AS2914:AS-GLOBAL
+# ATTACK 4: Add Arelion's AS-SET
+members: AS1299:AS-TWELVE99
+# ATTACK 5: Add Zayo's AS-SET
+members: AS-MFNX
+# ATTACK 6: Add Hurricane Electric's AS-SET (huge prefix count)
+members: AS-HURRICANE
+# AS3245 will be pruned: authorized for AS3245:LOCAL-PEERING only, not AS-HURRICANE
 mnt-by: MNT-MALICIOUS
 source: NTTCOM

@@ -37,42 +37,7 @@ AS2914:AS-EUROPE      (NTT Europe customers)
 bgpq4 -S RIPE,NTTCOM "AS2914:AS-GLOBAL"
 ```
 
-### 3. AS-SET Size Variations
-
-**CRITICAL FINDING**: AS-SET sizes vary by orders of magnitude!
-
-**Real-world sizes** (from POC queries):
-| AS-SET | Provider | Prefixes | Risk |
-|--------|----------|----------|------|
-| **AS-HURRICANE** | Hurricane Electric | **411,327** | **CATASTROPHIC** |
-| **AS-AMAZON** | Amazon | **18,547** | **MAJOR** |
-| **AS-GOOGLE** | Google | **7,259** | **SIGNIFICANT** |
-| AS-HETZNER | Hetzner | 4,804 | Large |
-| AS-MICROSOFT | Microsoft | 1,406 | Medium |
-| AS1299 | Arelion | 623 | Medium |
-| AS-FACEBOOK | Meta | 541 | Medium |
-| AS2914 | NTT | 589 | Medium |
-| AS-NFLX | Netflix | 67 | Small |
-
-**Key Insight**: Individual ASNs (AS15169) have few prefixes, but AS-SETs (AS-GOOGLE) contain thousands!
-
-**Implication**: 
-- Large AS-SETs (4000+ prefixes) need efficient caching
-- **AS-HURRICANE at 411K prefixes is a critical protection target**
-- Single malicious AS-SET inclusion could leak 400K+ prefixes
-
-**Finding**: IRR data != reality
-
-**Example**:
-- Google (AS15169): Only 3-5 prefixes in IRR
-- Reality: Google has thousands of prefixes
-
-**Implication**: 
-- IRR-based filtering is incomplete
-- member-of-as-set complements (doesn't replace) RPKI
-- Don't rely solely on IRR for prefix counts
-
-### 4. Tool Integration
+### 3. Tool Integration
 
 **Finding**: Can implement without modifying bgpq4/IRRd.
 
@@ -107,47 +72,6 @@ for asn in $ASNS; do
     echo "AS${asn}"
 done
 ```
-
----
-
-## Implementation Recommendations
-
-### Phase 1: Tool Development (Week 1-2)
-
-Create `bgpq4-member-verify` wrapper:
-
-```bash
-# Features needed:
-# - Cache member-of-as-set queries
-# - Support multiple IRR sources
-# - Generate both AS-path and prefix-list
-# - Configurable verification strictness
-```
-
-### Phase 2: Pilot with Large ASNs (Week 3-4)
-
-Target ASNs for early adoption:
-- Google (AS15169)
-- Microsoft (AS8075)
-- AWS (AS16509)
-- Netflix (AS2906)
-
-These create `member-of-as-set` listing their authorized transit providers.
-
-### Phase 3: Transit Provider Rollout (Month 2-3)
-
-Enable verification on customer-facing sessions:
-1. NTT (AS2914)
-2. Arelion (AS1299)
-3. Level3 (AS3356)
-4. Cogent (AS174)
-
-### Phase 4: Automation (Month 4+)
-
-Automated monitoring:
-- Daily scans for unauthorized ASNs in AS-SETs
-- Email alerts to AS-SET maintainers
-- Dashboard showing verification statistics
 
 ---
 
@@ -223,29 +147,6 @@ bgpq4 -S RIPE,ARIN,APNIC,NTTCOM,RADB AS-EXAMPLE
 ```bash
 bgpq4 -S NTTCOM "AS2914:AS-GLOBAL"
 ```
-
----
-
-## Monitoring and Alerting
-
-### Daily Checks
-
-```bash
-#!/bin/bash
-# check-as-set-hygiene.sh
-
-# Find AS-SETs with prunable ASNs
-for asset in AS-NTT-CUSTOMERS AS-ARELION-CUSTOMERS; do
-    echo "Checking $asset..."
-    bgpq4-member-verify -v "$asset" 2>&1 | grep "PRUNED"
-done
-```
-
-### Alert Criteria
-
-- Any AS-SET with >5% pruned ASNs
-- Unauthorized tier-1 ASN in customer AS-SET
-- Rapid changes in member-of-as-set objects
 
 ---
 

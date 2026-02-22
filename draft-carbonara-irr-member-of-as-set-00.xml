@@ -103,6 +103,40 @@
       </dl>
     </section>
 
+    <section anchor="background">
+      <name>Relationship to Existing RPSL Mechanisms</name>
+      <t>
+        RFC 2622 <xref target="RFC2622"/> Section 6 defines an optional
+        <em>member-of</em> attribute within the aut-num object. This attribute
+        works in conjunction with the mbrs-by-ref attribute in as-set objects
+        to enable indirect membership declarations.
+      </t>
+      <t>
+        The existing mechanism has significant limitations:
+      </t>
+      <ul spacing="normal">
+        <li>It is maintainer-centric (relies on mnt-by matching mbrs-by-ref)</li>
+        <li>It requires the aut-num object to exist in the database</li>
+        <li>The AS-SET owner cannot directly control membership</li>
+        <li>There is no way for an AS to opt-out of unwanted inclusions</li>
+      </ul>
+      <t>
+        The member-of-as-set object defined in this document provides a
+        fundamentally different mechanism that addresses these limitations:
+      </t>
+      <ul spacing="normal">
+        <li>It is a standalone object type (not an attribute within aut-num)</li>
+        <li>It enables mandatory bidirectional verification</li>
+        <li>It allows ASes to proactively authorize (or deny) AS-SET inclusion</li>
+        <li>It does not require the aut-num object to exist</li>
+      </ul>
+      <t>
+        Both mechanisms can coexist. An AS may use either or both depending
+        on their operational requirements and the capabilities of their
+        IRR registry.
+      </t>
+    </section>
+
     <section anchor="object">
       <name>The member-of-as-set Object</name>
       <t>
@@ -110,40 +144,175 @@
         autonomous system to declare membership in AS-SETs. This serves
         as authorization for inclusion.
       </t>
-      <sourcecode type="text">
-member-of-as-set:   [mandatory]  [single]     [primary/lookup key]
-admin-c:            [mandatory]  [multiple]   [inverse key]
-tech-c:             [mandatory]  [multiple]   [inverse key]
-mnt-by:             [mandatory]  [multiple]   [inverse key]
-source:             [mandatory]  [single]     []
-      </sourcecode>
-      <section anchor="object-attr">
-        <name>Attribute Definitions</name>
+      
+      <section anchor="object-template">
+        <name>Object Template</name>
         <t>
-          The member-of-as-set attribute specifies AS-SET objects in which
-          the autonomous system declares membership:
+          The member-of-as-set object follows the standard RPSL object format
+          defined in <xref target="RFC2622"/>.
         </t>
         <sourcecode type="text">
-member-of-as-set: AS-SET-1 [ AS-SET-2 ... AS-SET-n ]
+Attribute          Value                      Type
+member-of-as-set   &lt;as-number&gt;                mandatory, single-valued,
+                                              class key
+member-of          list of &lt;as-set-names&gt;     mandatory, multi-valued
+mnt-by             list of &lt;mntner-names&gt;     mandatory, multi-valued
+admin-c            &lt;nic-handle&gt;               mandatory, multi-valued
+tech-c             &lt;nic-handle&gt;               mandatory, multi-valued
+remarks            &lt;free-form&gt;                optional, multi-valued
+notify             &lt;email-address&gt;            optional, multi-valued
+changed            &lt;email-address&gt; &lt;date&gt;     mandatory, multi-valued
+source             &lt;registry-name&gt;            mandatory, single-valued
         </sourcecode>
         <t>
-          The attribute <bcp14>MUST</bcp14> contain at least one AS-SET name.
-          AS-SET names <bcp14>MUST</bcp14> be unique within the attribute.
-        </t>
-        <t>
-          The mnt-by attribute references maintainers authorized to modify
-          this object. Changes <bcp14>MUST</bcp14> be authenticated.
+          The class key is the member-of-as-set attribute containing the
+          autonomous system number. The combination of (object class,
+          class key) uniquely identifies a member-of-as-set object within
+          an IRR database.
         </t>
       </section>
+
+      <section anchor="object-attr">
+        <name>Attribute Definitions</name>
+        
+        <section anchor="attr-member-of-as-set">
+          <name>The member-of-as-set Attribute</name>
+          <t>
+            The member-of-as-set attribute specifies the autonomous system
+            number that this object describes. It serves as the primary key
+            for the object.
+          </t>
+          <sourcecode type="text">
+member-of-as-set: AS3245
+          </sourcecode>
+          <t>
+            The value <bcp14>MUST</bcp14> be a valid autonomous system number
+            formatted according to <xref target="RFC2622"/>, using the
+            AS&lt;number&gt; notation (e.g., AS3245, AS6939, AS65001).
+          </t>
+        </section>
+
+        <section anchor="attr-member-of">
+          <name>The member-of Attribute</name>
+          <t>
+            The member-of attribute lists the AS-SET objects in which the
+            autonomous system declares membership. Each value authorizes
+            inclusion in the specified AS-SET.
+          </t>
+          <sourcecode type="text">
+member-of: AS3245:LOCAL-PEERING
+member-of: AS3245:CUSTOMERS
+          </sourcecode>
+          <t>
+            The attribute <bcp14>MUST</bcp14> contain at least one AS-SET name.
+            AS-SET names <bcp14>MUST</bcp14> be unique within the attribute.
+            AS-SET names <bcp14>MUST</bcp14> follow the naming conventions
+            defined in <xref target="RFC2622"/> Section 5:
+          </t>
+          <ul spacing="normal">
+            <li>Flat names start with "as-" (e.g., AS-HURRICANE)</li>
+            <li>Hierarchical names use colon separators (e.g., AS2914:AS-GLOBAL)</li>
+            <li>Names are case-insensitive</li>
+            <li>Maximum component length follows &lt;object-name&gt; limits</li>
+          </ul>
+        </section>
+
+        <section anchor="attr-mnt-by">
+          <name>The mnt-by Attribute</name>
+          <t>
+            The mnt-by attribute references maintainer objects authorized to
+            create, modify, or delete this member-of-as-set object. Changes
+            <bcp14>MUST</bcp14> be authenticated according to the authentication
+            scheme specified in the referenced mntner object, per
+            <xref target="RFC2622"/> and <xref target="RFC2726"/>.
+          </t>
+        </section>
+
+        <section anchor="attr-standard">
+          <name>Standard Attributes</name>
+          <t>
+            The admin-c, tech-c, remarks, notify, changed, and source
+            attributes follow the definitions in <xref target="RFC2622"/>.
+          </t>
+        </section>
+      </section>
+
       <section anchor="semantics">
         <name>Object Semantics</name>
         <t>
-          By including an AS-SET name, an autonomous system authorizes its
-          inclusion in expansions of that AS-SET. If a member-of-as-set
-          object exists, it <bcp14>SHOULD</bcp14> contain a complete list
-          of authorized AS-SETs.
+          By including an AS-SET name in the member-of attribute, an autonomous
+          system authorizes its inclusion in expansions of that AS-SET.
+        </t>
+        <t>
+          If a member-of-as-set object exists for an autonomous system,
+          verification tools <bcp14>SHOULD</bcp14> use the complete list of
+          AS-SET names in the member-of attribute to determine authorization.
+        </t>
+        <t>
+          If no member-of-as-set object exists for an autonomous system,
+          verification tools <bcp14>MUST</bcp14> include the system (backward
+          compatibility) unless configured otherwise.
+        </t>
+        <t>
+          The member-of-as-set object coexists with the aut-num object but
+          serves a different purpose. The aut-num object defines routing
+          policy, while the member-of-as-set object defines AS-SET membership
+          authorization. Both objects may exist for the same autonomous
+          system.
         </t>
       </section>
+
+      <section anchor="example-objects">
+        <name>Example Objects</name>
+        <t>
+          Example member-of-as-set object for Sofia University (AS3245):
+        </t>
+        <sourcecode type="text">
+member-of-as-set: AS3245
+member-of:        AS3245:LOCAL-PEERING
+mnt-by:           MNTR-SOFIA-UNI
+admin-c:          DK58
+tech-c:           OPS4-RIPE
+remarks:          Sofia University only authorizes local peering AS-SET
+remarks:          NOT Hurricane Electric or other global AS-SETs
+changed:          admin@sofia-uni.bg 20260222
+source:           RIPE
+        </sourcecode>
+        <t>
+          Example for Hurricane Electric (AS6939):
+        </t>
+        <sourcecode type="text">
+member-of-as-set: AS6939
+member-of:        AS-HURRICANE
+mnt-by:           MAINT-AS6939
+admin-c:          HE-ADMIN
+tech-c:           HE-OPS
+changed:          ops@he.net 20260222
+source:           RADB
+        </sourcecode>
+      </section>
+    </section>
+
+    <section anchor="query">
+      <name>Query and Lookup</name>
+      <t>
+        The member-of-as-set object <bcp14>SHOULD</bcp14> be queried using
+        class-qualified lookup to avoid ambiguity with aut-num objects:
+      </t>
+      <sourcecode type="text">
+whois -h whois.ripe.net "member-of-as-set AS3245"
+      </sourcecode>
+      <t>
+        This returns the member-of-as-set object for AS3245, distinct from
+        the aut-num object which would be returned by:
+      </t>
+      <sourcecode type="text">
+whois -h whois.ripe.net "AS3245"
+      </sourcecode>
+      <t>
+        IRR software <bcp14>SHOULD</bcp14> support class-qualified queries
+        as defined in <xref target="RFC2622"/>.
+      </t>
     </section>
 
     <section anchor="verification">
@@ -153,25 +322,58 @@ member-of-as-set: AS-SET-1 [ AS-SET-2 ... AS-SET-n ]
       </t>
       <ol spacing="normal">
         <li>Recursively expand AS-SET S to obtain all autonomous systems.</li>
-        <li>For each autonomous system:</li>
+        <li>For each autonomous system AS:</li>
       </ol>
       <t>
-        Query the IRR for a member-of-as-set object. If none exists,
-        include the system (backward compatibility). If a member-of-as-set
-        object exists, check if the root AS-SET appears in the attribute.
-        Include if yes, prune if no.
+        Query the IRR for a member-of-as-set object for AS. If none exists,
+        include AS (backward compatibility). If a member-of-as-set object
+        exists, check if S appears in the member-of attribute. Include AS
+        if yes, prune if no.
       </t>
       <t>
         Finally, return the filtered set.
       </t>
+
+      <section anchor="verification-algorithm">
+        <name>Detailed Verification Algorithm</name>
+        <sourcecode type="text">
+function expandAndVerify(asSet, rootSet):
+    candidates = expandAsSet(asSet)
+    authorized = []
+    
+    for asn in candidates:
+        memberObj = queryMemberOfAsSet(asn)
+        
+        if memberObj is null:
+            # No authorization object exists
+            # Include for backward compatibility
+            authorized.append(asn)
+        else:
+            # Check if root AS-SET is authorized
+            if rootSet in memberObj.memberOf:
+                authorized.append(asn)
+            else:
+                # PRUNE: not authorized
+                logPruned(asn, rootSet)
+    
+    return authorized
+        </sourcecode>
+      </section>
+
       <section anchor="tools">
         <name>Implementation in Tools</name>
         <t>
           Tools that expand AS-SETs <bcp14>SHOULD</bcp14> support
-          verification. They <bcp14>SHOULD</bcp14> query IRR databases,
-          provide enable/disable options, default to disabled, log pruned
-          systems, and cache objects for performance.
+          verification. They <bcp14>SHOULD</bcp14>:
         </t>
+        <ul spacing="normal">
+          <li>Query IRR databases for member-of-as-set objects</li>
+          <li>Provide enable/disable options for verification</li>
+          <li>Default to disabled to maintain backward compatibility</li>
+          <li>Log pruned systems with reasons</li>
+          <li>Cache objects for performance</li>
+          <li>Support multiple IRR sources</li>
+        </ul>
       </section>
     </section>
 
@@ -180,12 +382,17 @@ member-of-as-set: AS-SET-1 [ AS-SET-2 ... AS-SET-n ]
       <t>
         The mechanism is backward compatible: non-participating autonomous
         systems are included as today; non-supporting tools work without
-        modification; IRR software requires no changes.
+        modification; IRR software requires object type registration.
       </t>
       <t>
-        Deployment proceeds incrementally: tools add support, large
-        autonomous systems create objects, providers enable verification.
+        Deployment proceeds incrementally:
       </t>
+      <ol spacing="normal">
+        <li>IRR software adds support for the new object type</li>
+        <li>Tools add verification capabilities</li>
+        <li>Large autonomous systems create member-of-as-set objects</li>
+        <li>Providers enable verification in their filter generation</li>
+      </ol>
       <t>
         Member-of-as-set complements RPKI and ASPA. It does not replace
         RPKI origin validation but adds AS path validation during
@@ -209,14 +416,48 @@ member-of-as-set: AS-SET-1 [ AS-SET-2 ... AS-SET-n ]
         <xref target="RFC2726"/>, monitor expansions, and automate
         object updates.
       </t>
+      <t>
+        The member-of-as-set object is maintained by the autonomous system
+        owner (via mnt-by). This ensures that only authorized parties can
+        declare AS-SET membership, unlike the existing mbrs-by-ref mechanism
+        which relies on maintainer trust relationships.
+      </t>
     </section>
 
     <section anchor="iana">
       <name>IANA Considerations</name>
       <t>
-        IANA is requested to register the member-of-as-set object type
-        and attribute in the RPSL Object Types and Attributes registries.
+        Per <xref target="RFC2622"/> Section 10, this document extends RPSL
+        with a new object type and attributes.
       </t>
+      <t>
+        IANA is requested to register the following in the RPSL Object
+        Types registry:
+      </t>
+      <sourcecode type="text">
+Object Type: member-of-as-set
+Reference: RFC XXXX (this document)
+Status: Current
+Contact: IETF GROW Working Group
+      </sourcecode>
+      <t>
+        IANA is requested to register the following attributes in the
+        RPSL Attributes registry:
+      </t>
+      <sourcecode type="text">
+Attribute: member-of-as-set
+Object Types: member-of-as-set
+Reference: RFC XXXX (this document)
+Status: Current
+
+Attribute: member-of
+Object Types: member-of-as-set, aut-num
+Reference: RFC XXXX (this document) for member-of-as-set;
+          RFC 2622 for aut-num
+Status: Current
+Note: The member-of attribute has different semantics in
+      member-of-as-set objects versus aut-num objects
+      </sourcecode>
     </section>
   </middle>
 

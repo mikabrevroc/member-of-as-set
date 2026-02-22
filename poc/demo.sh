@@ -4,15 +4,6 @@
 #
 # This script simulates a tier-1 provider (NTT) using AS-SET expansion
 # with and without member-of-as-set verification.
-#
-# Real-world AS-SET sizes from IRR queries:
-# - AS-HURRICANE: 411,327 prefixes (Hurricane Electric)
-# - AS-AMAZON: 18,547 prefixes (Amazon/AWS)
-# - AS-GOOGLE: 7,259 prefixes (Google)
-# - AS-HETZNER: 4,804 prefixes (Hetzner)
-# - AS-MICROSOFT: 1,406 prefixes (Microsoft)
-# - AS-FACEBOOK: 541 prefixes (Meta/Facebook)
-#
 
 set -e
 
@@ -23,12 +14,6 @@ echo "======================================================================="
 echo "  member-of-as-set Proof of Concept"
 echo "  Simulating NTT (AS2914) as Tier-1 Provider"
 echo "======================================================================="
-echo ""
-echo "Real-world AS-SET sizes (from actual IRR queries):"
-echo "  AS-HURRICANE: 411,327 prefixes (Hurricane Electric)"
-echo "  AS-AMAZON: 18,547 prefixes (Amazon)"
-echo "  AS-GOOGLE: 7,259 prefixes (Google)"
-echo "  AS-HETZNER: 4,804 prefixes (Hetzner)"
 echo ""
 
 # Make scripts executable
@@ -58,59 +43,55 @@ echo "Result: All 4 ASNs are authorized. No change."
 echo ""
 
 # ===========================================================================
-# SCENARIO 2: Malicious Customer with AS-HURRICANE (EXTREME CASE)
+# SCENARIO 2: Malicious Customer with Tier-1 AS-SET
 # ===========================================================================
 echo ""
 echo "======================================================================="
-echo "SCENARIO 2: Malicious Customer with AS-HURRICANE (411,327 prefixes!)"
+echo "SCENARIO 2: Malicious Customer with AS2914:AS-GLOBAL (NTT's customer AS-SET)"
 echo "======================================================================="
 echo ""
 echo "AS-SET: AS-MALICIOUS-CUSTOMER"
-echo "Members: AS64496-64499 (legitimate) + AS-HURRICANE (411,327 prefixes)"
+echo "Members: AS64496-64499 (legitimate) + AS2914:AS-GLOBAL (NTT's global AS-SET)"
 echo ""
-echo "Attack: Customer adds Hurricane Electric's entire AS-SET"
-echo "        This would leak 411,327 prefixes to the attacker's peers!"
+echo "Attack: Customer adds NTT's global AS-SET"
+echo "        This would leak all NTT customer routes to the attacker's peers!"
 echo ""
 
 # Without verification
 echo "--- WITHOUT member-of-as-set verification ---"
-echo "AS-path filter would accept: AS64496|AS64497|AS64498|AS64499|AS-HURRICANE"
-echo "Prefix-list would include: ~411,327+ prefixes from Hurricane Electric"
+echo "AS-path filter would accept: AS64496|AS64497|AS64498|AS64499|AS2914:AS-GLOBAL"
+echo "Prefix-list would include: All NTT customer prefixes"
 echo ""
-echo "Result: MASSIVE ROUTE LEAK - Attackers could announce HE prefixes!"
+echo "Result: MASSIVE ROUTE LEAK - Attackers could announce NTT customer prefixes!"
 echo ""
 
 # With verification
 echo "--- WITH member-of-as-set verification ---"
-echo "Checking AS-HURRICANE authorization..."
+echo "Checking AS2914:AS-GLOBAL authorization..."
 echo ""
-echo "AS6939 (Hurricane Electric ASN): member-of-as-set = AS-HURRICANE ✗"
-echo "AS6939 has NOT authorized inclusion in AS-NTT-CUSTOMERS"
+echo "AS2914 (NTT): member-of-as-set = AS2914:AS-GLOBAL ✓"
+echo "AS2914 has authorized inclusion in AS2914:AS-GLOBAL only"
 echo ""
-echo "Result: AS-HURRICANE PRUNED"
-echo "        Filter only allows: AS64496-64499 (~20-40 prefixes)"
-echo "        Prevented leak of 411,327 prefixes!"
+echo "Result: AS2914:AS-GLOBAL PRUNED from AS-MALICIOUS-CUSTOMER"
+echo "        Filter only allows: AS64496-64499 (legitimate customers)"
+echo "        Prevented leak of NTT customer routes!"
 echo ""
 
 # ===========================================================================
-# SCENARIO 3: Content Provider Protection (Google, Amazon)
+# SCENARIO 3: Content Provider Protection (Google, Amazon, Microsoft)
 # ===========================================================================
 echo ""
 echo "======================================================================="
 echo "SCENARIO 3: Content Provider Protection"
 echo "======================================================================="
 echo ""
-echo "Google (AS-GOOGLE): 7,259 prefixes"
-echo "Amazon (AS-AMAZON): 18,547 prefixes"
-echo "Microsoft (AS-MICROSOFT): 1,406 prefixes"
-echo ""
-echo "Scenario: Malicious customer adds these AS-SETs to steal traffic"
+echo "Scenario: Malicious customer adds Google, Amazon, Microsoft AS-SETs"
 echo ""
 
 # Without verification
 echo "--- WITHOUT verification ---"
 echo "AS-path would allow: AS-GOOGLE|AS-AMAZON|AS-MICROSOFT"
-echo "Total leaked prefixes: ~27,000+"
+echo "Result: Content provider traffic could be intercepted"
 echo ""
 
 # With verification
@@ -123,6 +104,34 @@ echo "Result: All three AS-SETs PRUNED from unauthorized AS-SET"
 echo ""
 
 # ===========================================================================
+# SCENARIO 4: AS3245 - Real-World Example of Unauthorized Inclusion
+# ===========================================================================
+echo ""
+echo "======================================================================="
+echo "SCENARIO 4: AS3245 (Sofia University) - Real-World Opt-Out Example"
+echo "======================================================================="
+echo ""
+echo "Real Example from AS-HURRICANE (RADB):"
+echo "  AS3245 (Sofia University, Bulgaria) is currently a member of AS-HURRICANE"
+echo "  This means their routes could be announced via Hurricane Electric"
+echo ""
+echo "BEFORE member-of-as-set:"
+echo "  - AS3245 appears in AS-HURRICANE expansion"
+echo "  - Their routes can leak globally via HE"
+echo "  - No way to prevent unauthorized inclusion"
+echo ""
+echo "AFTER member-of-as-set (AS3245 creates object):"
+echo "  member-of-as-set: AS3245:LOCAL-PEERING"
+echo "  (NOT AS-HURRICANE - they only authorize local peering)"
+echo ""
+echo "  - AS3245 PRUNED from AS-HURRICANE expansion"
+echo "  - Their routes no longer leak via HE"
+echo "  - AS3245 maintains control of their routing policy"
+echo ""
+echo "Result: AS3245 successfully opts out of AS-HURRICANE"
+echo "        This is exactly what member-of-as-set enables!"
+
+# ===========================================================================
 # COMPARISON: AS-Path vs Prefix-List Filtering
 # ===========================================================================
 echo ""
@@ -131,18 +140,15 @@ echo "COMPARISON: AS-Path vs Prefix-List Filtering"
 echo "======================================================================="
 echo ""
 
-echo "Real-world impact if AS-HURRICANE added maliciously:"
-echo ""
 echo "WITHOUT member-of-as-set:"
-echo "  - AS-path filter accepts: AS64496|AS64497|AS64498|AS64499|AS-HURRICANE"
-echo "  - Prefix-list includes: 411,327+ Hurricane Electric prefixes"
-echo "  - Result: MASSIVE route leak potential"
+echo "  - Any AS-SET/ASN can be added without authorization"
+echo "  - Malicious customers can add tier-1 AS-SETs"
+echo "  - No protection against route leaks"
 echo ""
 echo "WITH member-of-as-set:"
-echo "  - AS-path filter accepts: AS64496-64499 only"
-echo "  - Prefix-list includes: ~20-40 legitimate prefixes"
-echo "  - AS-HURRICANE: PRUNED (not authorized)"
-echo "  - Result: 99.99% reduction in leaked prefixes"
+echo "  - Tier-1 AS-SETs must authorize each inclusion"
+echo "  - Unauthorized AS-SETs are pruned during expansion"
+echo "  - Backward compatible: ASNs without objects still work"
 echo ""
 
 echo "Juniper AS-path filter (SECURE):"
@@ -150,48 +156,27 @@ echo "Juniper AS-path filter (SECURE):"
 echo ""
 
 # ===========================================================================
-# Real-world AS-SET Size Summary
-# ===========================================================================
-echo ""
-echo "======================================================================="
-echo "REAL-WORLD AS-SET SIZES (from IRR queries)"
-echo "======================================================================="
-echo ""
-echo "Content/Tier-1 Providers:"
-echo "  AS-HURRICANE:  411,327 prefixes (Hurricane Electric)"
-echo "  AS-AMAZON:      18,547 prefixes (Amazon/AWS)"
-echo "  AS-GOOGLE:       7,259 prefixes (Google)"
-echo "  AS-HETZNER:      4,804 prefixes (Hetzner)"
-echo "  AS-MICROSOFT:    1,406 prefixes (Microsoft)"
-echo "  AS-FACEBOOK:       541 prefixes (Meta/Facebook)"
-echo "  AS-NFLX:            67 prefixes (Netflix)"
-echo ""
-echo "A single malicious AS-SET inclusion could leak:"
-echo "  - AS-HURRICANE: 411,327 prefixes (CATASTROPHIC)"
-echo "  - AS-AMAZON: 18,547 prefixes (MAJOR)"
-echo "  - AS-GOOGLE: 7,259 prefixes (SIGNIFICANT)"
-echo ""
-
-# ===========================================================================
 # Summary
 # ===========================================================================
+echo ""
 echo "======================================================================="
 echo "SUMMARY"
 echo "======================================================================="
 echo ""
 echo "WITHOUT member-of-as-set:"
 echo "  - Any ASN/AS-SET can be added without authorization"
-echo "  - Malicious customers can add AS-HURRICANE (411K prefixes)"
+echo "  - Malicious customers can add tier-1 AS-SETs (AS2914:AS-GLOBAL, etc.)"
 echo "  - No protection against massive route leaks"
 echo ""
 echo "WITH member-of-as-set:"
-echo "  - AS-HURRICANE must authorize each AS-SET inclusion"
-echo "  - Unauthorized AS-SETs (like AS-HURRICANE) are pruned"
-echo "  - Prevents catastrophic 411K prefix leak"
+echo "  - Tier-1 AS-SETs must authorize each AS-SET inclusion"
+echo "  - Unauthorized AS-SETs (like AS2914:AS-GLOBAL) are pruned"
+echo "  - Prevents catastrophic route leaks"
 echo "  - Backward compatible: ASNs without objects still work"
 echo ""
 echo "Critical Protection:"
-echo "  - AS-HURRICANE (411,327 prefixes) protected from hijacking"
-echo "  - AS-AMAZON (18,547 prefixes) protected"
-echo "  - AS-GOOGLE (7,259 prefixes) protected"
+echo "  - AS2914:AS-GLOBAL (NTT customers) protected from hijacking"
+echo "  - AS-HURRICANE (Hurricane Electric) protected"
+echo "  - AS-AMAZON (Amazon/AWS) protected"
+echo "  - AS-GOOGLE (Google) protected"
 echo "======================================================================="

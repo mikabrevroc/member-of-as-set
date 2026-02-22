@@ -11,7 +11,7 @@ This project defines the `member-of-as-set` object type for IRR databases, enabl
 Currently, AS-SET objects are **unidirectional**:
 - An AS-SET owner can include any autonomous system without authorization
 - This allows malicious operators to add tier-1/content provider ASNs (Google, Microsoft, etc.) to their AS-SET
-- Potential for massive route leaks (AS-HURRICANE: 411,327 prefixes could be leaked!)
+- Potential for massive route leaks
 
 ## Solution
 
@@ -34,7 +34,7 @@ Located in `poc/` directory:
 
 - `as-set-expander.sh` - Expands AS-SETs with optional verification
 - `juniper-generator.sh` - Generates Juniper AS-path/prefix-list configs
-- `demo.sh` - Full demonstration with attack scenarios (includes AS-HURRICANE case)
+- `demo.sh` - Full demonstration with attack scenarios
 - `simulated-irr/` - Simulated IRR objects
 
 ### Running the POC
@@ -46,8 +46,8 @@ cd poc
 
 Demonstrates:
 1. Legitimate customer AS-SET (all authorized)
-2. **AS-HURRICANE protection** (411,327 prefixes - CATASTROPHIC if leaked)
-3. Content provider protection (Google: 7,259 prefixes, Amazon: 18,547 prefixes)
+2. **AS-HURRICANE protection** (large AS-SET)
+3. Content provider protection (Google, Amazon)
 4. Comparison: AS-path filtering vs prefix-list filtering
 
 ## Key Features
@@ -56,23 +56,23 @@ Demonstrates:
 - **No IRR changes needed**: Uses standard RPSL objects
 - **Incremental deployment**: Large ASNs can opt-in first
 - **Complements RPKI**: Adds AS-path validation, doesn't replace origin validation
-- **Catastrophic leak prevention**: AS-HURRICANE (411K prefixes) protected
+- **Catastrophic leak prevention**: Large AS-SETs like AS-HURRICANE protected
 
 ## Real-World Impact
 
-From POC analysis of actual IRR data:
+This proposal protects against unauthorized inclusion of major provider AS-SETs in customer filters. For example, a malicious actor adding `AS2914:AS-GLOBAL` (NTT's customer AS-SET) to their own AS-SET could leak routes from NTT's entire customer base if not properly verified.
 
-| AS-SET | Provider | Prefixes | Risk Level |
-|--------|----------|----------|------------|
-| **AS-HURRICANE** | Hurricane Electric | **411,327** | **CATASTROPHIC** |
-| **AS-AMAZON** | Amazon | **18,547** | **MAJOR** |
-| **AS-GOOGLE** | Google | **7,259** | **SIGNIFICANT** |
-| AS-HETZNER | Hetzner | 4,804 | Large |
-| AS-MICROSOFT | Microsoft | 1,406 | Medium |
-| AS-FACEBOOK | Meta | 541 | Medium |
-| AS-NFLX | Netflix | 67 | Small |
+## Tier-1 Provider AS-SETs
 
-**Critical Example**: A malicious customer adding **AS-HURRICANE** (411,327 prefixes) to their AS-SET could leak Hurricane Electric's entire prefix database to thousands of peers. With member-of-as-set, AS-HURRICANE would be **pruned** (not authorized), preventing this catastrophic leak.
+Common AS-SET patterns found in IRR databases:
+
+| Provider | ASN | AS-SET |
+|----------|-----|--------|
+| NTT | AS2914 | AS2914:AS-GLOBAL |
+| Arelion | AS1299 | AS1299:AS-TWELVE99 (RIPE) |
+| Zayo | AS6461 | AS-MFNX (RADB) |
+
+Note: Many Tier-1 providers do not publish their customer AS-SETs in public IRR databases, or use private/hierarchical naming schemes.
 
 ## Status
 
