@@ -233,22 +233,11 @@ member-of: AS3245:CUSTOMERS
           </ul>
         </section>
 
-        <section anchor="attr-mnt-by">
-          <name>The mnt-by Attribute</name>
+        <section anchor="attr-other">
+          <name>Other Attributes</name>
           <t>
-            The mnt-by attribute references maintainer objects authorized to
-            create, modify, or delete this member-of-as-set object. Changes
-            <bcp14>MUST</bcp14> be authenticated according to the authentication
-            scheme specified in the referenced mntner object, per
-            <xref target="RFC2622"/> and <xref target="RFC2726"/>.
-          </t>
-        </section>
-
-        <section anchor="attr-standard">
-          <name>Standard Attributes</name>
-          <t>
-            The admin-c, tech-c, remarks, notify, changed, and source
-            attributes follow the definitions in <xref target="RFC2622"/>.
+            The admin-c, tech-c, mnt-by, remarks, notify, changed, and source
+            attributes are used as defined in <xref target="RFC2622"/>.
           </t>
         </section>
       </section>

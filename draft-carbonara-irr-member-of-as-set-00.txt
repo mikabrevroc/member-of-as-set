@@ -74,17 +74,16 @@ Table of Contents
      4.2.  Attribute Definitions . . . . . . . . . . . . . . . . . .   4
        4.2.1.  The member-of-as-set Attribute  . . . . . . . . . . .   4
        4.2.2.  The member-of Attribute . . . . . . . . . . . . . . .   5
-       4.2.3.  The mnt-by Attribute  . . . . . . . . . . . . . . . .   5
-       4.2.4.  Standard Attributes . . . . . . . . . . . . . . . . .   6
-     4.3.  Object Semantics  . . . . . . . . . . . . . . . . . . . .   6
+       4.2.3.  Other Attributes  . . . . . . . . . . . . . . . . . .   5
+     4.3.  Object Semantics  . . . . . . . . . . . . . . . . . . . .   5
      4.4.  Example Objects . . . . . . . . . . . . . . . . . . . . .   6
    5.  Query and Lookup  . . . . . . . . . . . . . . . . . . . . . .   7
-   6.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   8
+   6.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   7
      6.1.  Detailed Verification Algorithm . . . . . . . . . . . . .   8
      6.2.  Implementation in Tools . . . . . . . . . . . . . . . . .   8
    7.  Deployment Considerations . . . . . . . . . . . . . . . . . .   9
    8.  Security Considerations . . . . . . . . . . . . . . . . . . .   9
-   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  10
+   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   9
    10. References  . . . . . . . . . . . . . . . . . . . . . . . . .  10
      10.1.  Normative References . . . . . . . . . . . . . . . . . .  10
      10.2.  Informative References . . . . . . . . . . . . . . . . .  10
@@ -104,8 +103,9 @@ Table of Contents
    vulnerability where malicious operators can include high-value
    autonomous systems in their AS-SET.
 
-
-
+   While RPKI [RFC6480] provides origin validation, it does not prevent
+   route leaks.  Similarly, ASPA [RFC9595] provides AS path validation
+   but has seen limited deployment.
 
 
 
@@ -113,10 +113,6 @@ Ytti                     Expires 26 August 2026                 [Page 2]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
-
-   While RPKI [RFC6480] provides origin validation, it does not prevent
-   route leaks.  Similarly, ASPA [RFC9595] provides AS path validation
-   but has seen limited deployment.
 
    This document defines the member-of-as-set object to enable
    bidirectional verification with the following goals: authorization of
@@ -162,6 +158,10 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    *  It is a standalone object type (not an attribute within aut-num)
 
+   *  It enables mandatory bidirectional verification
+
+   *  It allows ASes to proactively authorize (or deny) AS-SET inclusion
+
 
 
 
@@ -169,10 +169,6 @@ Ytti                     Expires 26 August 2026                 [Page 3]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
-
-   *  It enables mandatory bidirectional verification
-
-   *  It allows ASes to proactively authorize (or deny) AS-SET inclusion
 
    *  It does not require the aut-num object to exist
 
@@ -219,15 +215,16 @@ Internet-Draft              Member-of-AS-SET               February 2026
    AS-SET names, allowing both individual ASNs and AS-SETs themselves to
    declare membership authorization:
 
+   *  If a value is an AS number (e.g., AS3245), the object authorizes
+      that ASN's inclusion in the listed AS-SETs
+
+
 
 
 Ytti                     Expires 26 August 2026                 [Page 4]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
-
-   *  If a value is an AS number (e.g., AS3245), the object authorizes
-      that ASN's inclusion in the listed AS-SETs
 
    *  If a value is an AS-SET name (e.g., AS-HURRICANE), the object
       authorizes that AS-SET's inclusion as a member of other AS-SETs
@@ -265,13 +262,16 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    *  Maximum component length follows <object-name> limits
 
-4.2.3.  The mnt-by Attribute
+4.2.3.  Other Attributes
 
-   The mnt-by attribute references maintainer objects authorized to
-   create, modify, or delete this member-of-as-set object.  Changes MUST
-   be authenticated according to the authentication scheme specified in
-   the referenced mntner object, per [RFC2622] and [RFC2726].
+   The admin-c, tech-c, mnt-by, remarks, notify, changed, and source
+   attributes are used as defined in [RFC2622].
 
+4.3.  Object Semantics
+
+   By including an AS-SET name in the member-of attribute, the
+   autonomous systems and AS-SETs listed in member-of-as-set authorize
+   their inclusion in expansions of that AS-SET.
 
 
 
@@ -281,17 +281,6 @@ Ytti                     Expires 26 August 2026                 [Page 5]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
-
-4.2.4.  Standard Attributes
-
-   The admin-c, tech-c, remarks, notify, changed, and source attributes
-   follow the definitions in [RFC2622].
-
-4.3.  Object Semantics
-
-   By including an AS-SET name in the member-of attribute, the
-   autonomous systems and AS-SETs listed in member-of-as-set authorize
-   their inclusion in expansions of that AS-SET.
 
    If a member-of-as-set object exists for an autonomous system or AS-
    SET, verification tools SHOULD use the complete list of AS-SET names
@@ -324,6 +313,17 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    Example for Hurricane Electric (AS6939):
 
+   member-of-as-set: AS6939
+   member-of:        AS-HURRICANE
+   mnt-by:           MAINT-AS6939
+   admin-c:          HE-ADMIN
+   tech-c:           HE-OPS
+   changed:          ops@he.net 20260222
+   source:           RADB
+
+   Example for AS-HURRICANE itself (authorizing inclusion in other AS-
+   SETs):
+
 
 
 
@@ -337,17 +337,6 @@ Ytti                     Expires 26 August 2026                 [Page 6]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
-
-   member-of-as-set: AS6939
-   member-of:        AS-HURRICANE
-   mnt-by:           MAINT-AS6939
-   admin-c:          HE-ADMIN
-   tech-c:           HE-OPS
-   changed:          ops@he.net 20260222
-   source:           RADB
-
-   Example for AS-HURRICANE itself (authorizing inclusion in other AS-
-   SETs):
 
    member-of-as-set: AS-HURRICANE
    member-of:        AS-GLOBAL-TRANSIT
@@ -385,15 +374,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    whois -h whois.ripe.net "AS3245"
 
-
-
-
-
-Ytti                     Expires 26 August 2026                 [Page 7]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
    IRR software SHOULD support class-qualified queries as defined in
    [RFC2622].
 
@@ -404,6 +384,15 @@ Internet-Draft              Member-of-AS-SET               February 2026
    1.  Recursively expand AS-SET S to obtain all autonomous systems.
 
    2.  For each autonomous system AS:
+
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 7]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
 
    Query the IRR for a member-of-as-set object where AS appears in the
    member-of-as-set attribute.  If none exists, include AS (backward
@@ -443,13 +432,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    *  Provide enable/disable options for verification
 
-
-
-Ytti                     Expires 26 August 2026                 [Page 8]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
    *  Default to disabled to maintain backward compatibility
 
    *  Log pruned systems with reasons
@@ -457,6 +439,16 @@ Internet-Draft              Member-of-AS-SET               February 2026
    *  Cache objects for performance
 
    *  Support multiple IRR sources
+
+
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 8]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
 
 7.  Deployment Considerations
 
@@ -495,6 +487,14 @@ Internet-Draft              Member-of-AS-SET               February 2026
    can declare AS-SET membership, unlike the existing mbrs-by-ref
    mechanism which relies on maintainer trust relationships.
 
+9.  IANA Considerations
+
+   Per [RFC2622] Section 10, this document extends RPSL with a new
+   object type and attributes.
+
+   IANA is requested to register the following in the RPSL Object Types
+   registry:
+
 
 
 
@@ -505,14 +505,6 @@ Ytti                     Expires 26 August 2026                 [Page 9]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
-
-9.  IANA Considerations
-
-   Per [RFC2622] Section 10, this document extends RPSL with a new
-   object type and attributes.
-
-   IANA is requested to register the following in the RPSL Object Types
-   registry:
 
    Object Type: member-of-as-set
    Reference: RFC XXXX (this document)
@@ -555,18 +547,20 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
 10.2.  Informative References
 
+   [RFC6480]  Lepinski, M., "RPKI Infrastructure", RFC 6480, 2012,
+              <https://www.rfc-editor.org/info/rfc6480>.
+
+   [RFC9595]  Weber, K., "BGP ASPA", RFC 9595, 2024,
+              <https://www.rfc-editor.org/info/rfc9595>.
+
+
+
 
 
 Ytti                     Expires 26 August 2026                [Page 10]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
-
-   [RFC6480]  Lepinski, M., "RPKI Infrastructure", RFC 6480, 2012,
-              <https://www.rfc-editor.org/info/rfc6480>.
-
-   [RFC9595]  Weber, K., "BGP ASPA", RFC 9595, 2024,
-              <https://www.rfc-editor.org/info/rfc9595>.
 
 Acknowledgments
 
@@ -578,6 +572,12 @@ Author's Address
    Saku Ytti
    NTT Communications Corporation
    Email: saku@ytti.cy
+
+
+
+
+
+
 
 
 
