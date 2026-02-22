@@ -1,0 +1,68 @@
+RPKI-AS-SET-AUTHORIZATION
+  { iso(1) identified-organization(3) dod(6) internet(1)
+    private(4) enterprise(1) 99999 42 }  -- FIXME: Need real OID
+
+DEFINITIONS IMPLICIT TAGS ::=
+BEGIN
+
+-- Imports from other RFCs
+-- ASID is defined in RFC 3779 (X.509 Extensions for IP Addresses and AS Identifiers)
+-- For compilation, we define it here:
+ASID ::= INTEGER (0..4294967295)
+
+-- RASA object identifiers
+id-rpki-rasa OBJECT IDENTIFIER ::= { id-rpki 42 }
+id-rpki-rasa-set OBJECT IDENTIFIER ::= { id-rpki 42 1 }
+id-rpki-rasa-auth OBJECT IDENTIFIER ::= { id-rpki 42 2 }
+
+-- RASA-SET flags
+RasaFlags ::= BIT STRING {
+    doNotInherit(0),
+    authoritative(1)
+}
+
+-- RASA-AUTH flags
+RasaAuthFlags ::= BIT STRING {
+    strictMode(0)
+}
+
+-- Propagation scope for peer locking
+PropagationScope ::= ENUMERATED {
+    unrestricted(0),    -- Can be nested anywhere (default)
+    directOnly(1)       -- Peer lock signal
+}
+
+-- Authorized entry with optional propagation constraint
+AuthorizedEntry ::= SEQUENCE {
+    asSetName        UTF8String,
+    propagation      PropagationScope OPTIONAL
+    -- If propagation is absent, defaults to unrestricted
+}
+
+-- RASA-SET content
+RasaSetContent ::= SEQUENCE {
+  version          [0] INTEGER DEFAULT 0,
+  asSetName            UTF8String,
+  containingAS         ASID,
+  members              SEQUENCE OF ASID,
+  nestedSets           SEQUENCE OF UTF8String OPTIONAL,
+  irrSource            UTF8String OPTIONAL,
+  flags                RasaFlags OPTIONAL,
+  notBefore            GeneralizedTime,
+  notAfter             GeneralizedTime
+}
+
+-- RASA-AUTH content
+RasaAuthContent ::= SEQUENCE {
+  version          [0] INTEGER DEFAULT 0,
+  authorizedEntity CHOICE {
+     authorizedAS        ASID,
+     authorizedSet       UTF8String
+  },
+  authorizedIn         SEQUENCE OF AuthorizedEntry,
+  flags                RasaAuthFlags OPTIONAL,
+  notBefore            GeneralizedTime,
+  notAfter             GeneralizedTime
+}
+
+END
