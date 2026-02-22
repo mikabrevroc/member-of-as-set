@@ -855,27 +855,7 @@ RASA Object (signed by AS6939):
         RASA provides cryptographic assurance of AS-SET membership, but
         several security considerations apply:
       </t>
-      <section anchor="key-management">
-        <name>RPKI Key Management</name>
-        <t>
-          The security of RASA depends on proper RPKI key management:
-        </t>
-        <ul spacing="normal">
-          <li>
-            AS operators must secure their RPKI private keys. A compromised
-            key allows an attacker to create fraudulent RASA objects.
-          </li>
-          <li>
-            RASA objects should be published promptly to minimize windows
-            where IRR data is authoritative.
-          </li>
-          <li>
-            Relying parties must validate RASA objects according to RPKI
-            policies and check revocation status.
-          </li>
-        </ul>
-      </section>
-      <section anchor="partial-deployment">
+            <section anchor="partial-deployment">
         <name>Partial Deployment</name>
         <t>
           During partial deployment, some AS-SETs will not have RASA objects.
