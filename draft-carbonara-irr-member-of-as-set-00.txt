@@ -192,8 +192,8 @@ Internet-Draft              Member-of-AS-SET               February 2026
    defined in [RFC2622].
 
    Attribute          Value                      Type
-   member-of-as-set   <as-number> or             mandatory, single-valued,
-                      <as-set-name>              class key
+   member-of-as-set   list of <as-numbers> or     mandatory, multi-valued,
+                      <as-set-names>             class key
    member-of          list of <as-set-names>     mandatory, multi-valued
    mnt-by             list of <mntner-names>     mandatory, multi-valued
    admin-c            <nic-handle>               mandatory, multi-valued

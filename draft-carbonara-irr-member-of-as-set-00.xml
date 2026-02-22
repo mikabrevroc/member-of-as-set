@@ -153,8 +153,8 @@
         </t>
         <sourcecode type="text">
 Attribute          Value                      Type
-member-of-as-set   &lt;as-number&gt; or             mandatory, single-valued,
-                   &lt;as-set-name&gt;              class key
+member-of-as-set   list of &lt;as-numbers&gt; or     mandatory, multi-valued,
+                   &lt;as-set-names&gt;             class key
 member-of          list of &lt;as-set-names&gt;     mandatory, multi-valued
 mnt-by             list of &lt;mntner-names&gt;     mandatory, multi-valued
 admin-c            &lt;nic-handle&gt;               mandatory, multi-valued
