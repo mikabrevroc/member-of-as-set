@@ -1,0 +1,280 @@
+
+
+
+
+Global Routing Operations                                   S. Carbonara
+Internet-Draft                            NTT Communications Corporation
+Intended status: Standards Track                        22 February 2026
+Expires: 26 August 2026
+
+
+      Membership Verification for Autonomous System Sets (AS-SETs)
+                draft-carbonara-irr-member-of-as-set-00
+
+Abstract
+
+   This document defines a new object type, member-of-as-set, for use in
+   Internet Routing Registry (IRR) databases.  The member-of-as-set
+   object enables autonomous systems to declare membership in AS-SET
+   objects, creating bidirectional verification of AS-SET expansions.
+
+   The member-of-as-set object provides a lightweight, backward-
+   compatible mechanism that allows network operators to verify that an
+   autonomous system listed in an AS-SET has authorized such inclusion.
+   When used in conjunction with existing tools such as bgpq4, this
+   verification enables automated pruning of unauthorized autonomous
+   systems from AS-SET expansions.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 26 August 2026.
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+
+
+
+Carbonara                Expires 26 August 2026                 [Page 1]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
+   2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   3
+   3.  The member-of-as-set Object . . . . . . . . . . . . . . . . .   3
+     3.1.  Attribute Definitions . . . . . . . . . . . . . . . . . .   3
+     3.2.  Object Semantics  . . . . . . . . . . . . . . . . . . . .   3
+   4.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   4
+     4.1.  Implementation in Tools . . . . . . . . . . . . . . . . .   4
+   5.  Deployment Considerations . . . . . . . . . . . . . . . . . .   4
+   6.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
+   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   5
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   5
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   5
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .   5
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .   5
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .   5
+
+1.  Introduction
+
+   Internet Routing Registry (IRR) databases [RFC2622] have long been
+   used by network operators to generate BGP route filters.  The Routing
+   Policy Specification Language (RPSL) defines the as-set object, which
+   represents a set of autonomous systems.
+
+   A fundamental limitation of current AS-SET objects is their
+   unidirectional nature.  An AS-SET owner can include any autonomous
+   system without requiring authorization.  This creates a security
+   vulnerability where malicious operators can include high-value
+   autonomous systems in their AS-SET.
+
+   While RPKI [RFC6480] provides origin validation, it does not prevent
+   route leaks.  Similarly, ASPA [RFC9595] provides AS path validation
+   but has seen limited deployment.
+
+   This document defines the member-of-as-set object to enable
+   bidirectional verification with the following goals: authorization of
+   AS-SET membership, verification during expansion, backward
+   compatibility, incremental deployment, and complementarity with
+   existing mechanisms.
+
+
+
+
+
+Carbonara                Expires 26 August 2026                 [Page 2]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+2.  Terminology
+
+   The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD,
+   SHOULD NOT, RECOMMENDED, MAY, and OPTIONAL in this document are to be
+   interpreted as described in BCP 14 [RFC2119] [RFC8174].
+
+   AS-SET:  An RPSL object representing a set of ASNs, per [RFC2622].
+
+   Member-of-AS-SET:  An RPSL object allowing an AS to declare AS-SET
+      membership.
+
+   AS-SET Expansion:  Recursively resolving an AS-SET to obtain all
+      ASNs.
+
+   Root AS-SET:  The AS-SET from which an expansion begins.
+
+3.  The member-of-as-set Object
+
+   The member-of-as-set object is an RPSL object that allows an
+   autonomous system to declare membership in AS-SETs.  This serves as
+   authorization for inclusion.
+
+   member-of-as-set:   [mandatory]  [single]     [primary/lookup key]
+   admin-c:            [mandatory]  [multiple]   [inverse key]
+   tech-c:             [mandatory]  [multiple]   [inverse key]
+   mnt-by:             [mandatory]  [multiple]   [inverse key]
+   source:             [mandatory]  [single]     []
+
+3.1.  Attribute Definitions
+
+   The member-of-as-set attribute specifies AS-SET objects in which the
+   autonomous system declares membership:
+
+   member-of-as-set: AS-SET-1 [ AS-SET-2 ... AS-SET-n ]
+
+   The attribute MUST contain at least one AS-SET name.  AS-SET names
+   MUST be unique within the attribute.
+
+   The mnt-by attribute references maintainers authorized to modify this
+   object.  Changes MUST be authenticated.
+
+3.2.  Object Semantics
+
+   By including an AS-SET name, an autonomous system authorizes its
+   inclusion in expansions of that AS-SET.  If a member-of-as-set object
+   exists, it SHOULD contain a complete list of authorized AS-SETs.
+
+
+
+
+
+Carbonara                Expires 26 August 2026                 [Page 3]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+4.  Verification Mechanism
+
+   Given an AS-SET S to be expanded, the verification algorithm is:
+
+   1.  Recursively expand AS-SET S to obtain all autonomous systems.
+
+   2.  For each autonomous system:
+
+   Query the IRR for a member-of-as-set object.  If none exists, include
+   the system (backward compatibility).  If a member-of-as-set object
+   exists, check if the root AS-SET appears in the attribute.  Include
+   if yes, prune if no.
+
+   Finally, return the filtered set.
+
+4.1.  Implementation in Tools
+
+   Tools that expand AS-SETs SHOULD support verification.  They SHOULD
+   query IRR databases, provide enable/disable options, default to
+   disabled, log pruned systems, and cache objects for performance.
+
+5.  Deployment Considerations
+
+   The mechanism is backward compatible: non-participating autonomous
+   systems are included as today; non-supporting tools work without
+   modification; IRR software requires no changes.
+
+   Deployment proceeds incrementally: tools add support, large
+   autonomous systems create objects, providers enable verification.
+
+   Member-of-as-set complements RPKI and ASPA.  It does not replace RPKI
+   origin validation but adds AS path validation during AS-SET
+   expansion.
+
+6.  Security Considerations
+
+   The mechanism addresses unauthorized AS-SET inclusion, accidental
+   misconfiguration, and BGP optimizer leaks.
+
+   Incomplete lists risk filtering legitimate routes.  Attackers with
+   compromised credentials can create false objects.  Verification
+   occurs during filter generation, not BGP operation.
+
+   Networks SHOULD use strong authentication [RFC2726], monitor
+   expansions, and automate object updates.
+
+
+
+
+
+
+Carbonara                Expires 26 August 2026                 [Page 4]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+7.  IANA Considerations
+
+   IANA is requested to register the member-of-as-set object type and
+   attribute in the RPSL Object Types and Attributes registries.
+
+8.  References
+
+8.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC2622]  Alaettinoglu, C., Villamizar, C., and E. Gerich, "Routing
+              Policy Specification Language (RPSL)", RFC 2622, 1999,
+              <https://www.rfc-editor.org/info/rfc2622>.
+
+   [RFC2726]  Blunk, L., "PGP Authentication for RIPE Database Updates",
+              RFC 2726, 1999, <https://www.rfc-editor.org/info/rfc2726>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Key Words", BCP 14, RFC 8174,
+              2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+8.2.  Informative References
+
+   [RFC6480]  Lepinski, M., "RPKI Infrastructure", RFC 6480, 2012,
+              <https://www.rfc-editor.org/info/rfc6480>.
+
+   [RFC9595]  Weber, K., "BGP ASPA", RFC 9595, 2024,
+              <https://www.rfc-editor.org/info/rfc9595>.
+
+Acknowledgments
+
+   Thanks to the #networker IRC community for discussions leading to
+   this proposal.
+
+Author's Address
+
+   Saku Carbonara
+   NTT Communications Corporation
+   Email: saku@carbonara.cy
+
+
+
+
+
+
+
+
+
+
+Carbonara                Expires 26 August 2026                 [Page 5]
