@@ -434,8 +434,9 @@ RasaAuthContent ::= SEQUENCE {
           </dd>
           <dt>RASA-AUTH:</dt>
           <dd>
-            Published by the ASN owner (e.g., AS64496). Authorizes inclusion
-            of the ASN in specific AS-SETs.
+            Published by the ASN or AS-SET owner. Authorizes inclusion
+            of the ASN (via authorizedAS) or AS-SET (via authorizedSet) 
+            in specific parent AS-SETs.
           </dd>
         </dl>
         <t>
