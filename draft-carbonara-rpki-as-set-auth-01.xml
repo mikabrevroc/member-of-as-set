@@ -266,7 +266,8 @@ PropagationScope ::= ENUMERATED {
 -- Authorized entry with propagation constraint
 AuthorizedEntry ::= SEQUENCE {
     asSetName        UTF8String,
-    propagation      PropagationScope DEFAULT unrestricted
+    propagation      PropagationScope OPTIONAL
+    -- If propagation is absent, defaults to unrestricted
 }
           </sourcecode>
           <sourcecode type="text">
@@ -362,6 +363,9 @@ RasaAuthContent ::= SEQUENCE {
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime
 }
+
+-- Note: authorizedIn always uses AuthorizedEntry. The propagation field
+-- is OPTIONAL - if absent, defaults to unrestricted.
           </sourcecode>
         </section>
         <section anchor="rasa-auth-fields">
@@ -370,9 +374,7 @@ RasaAuthContent ::= SEQUENCE {
             <dt>version:</dt>
             <dd>
               The version of the RASA-AUTH format. This document defines
-              version 0 (authorizedAS only), version 1 (CHOICE support),
-              and version 2 (peer locking with AuthorizedEntry).
-              Version 2 MUST use AuthorizedEntry for authorizedIn.
+              version 0. Future versions may add new features.
             </dd>
             <dt>authorizedEntity:</dt>
             <dd>
@@ -391,11 +393,13 @@ RasaAuthContent ::= SEQUENCE {
             </dd>
             <dt>authorizedIn:</dt>
             <dd>
-              Each entry is an AuthorizedEntry containing asSetName (fully
-              qualified AS-SET name) and propagation (PropagationScope).
-              The propagation field controls transitive inclusion:
-              unrestricted (default) allows nesting in other AS-SETs;
-              directOnly prevents transitive inclusion (peer lock).
+              Each entry is an AuthorizedEntry containing asSetName
+              (the AS-SET name) and optionally propagation (PropagationScope).
+              If propagation is absent, it defaults to unrestricted.
+              The propagation field signals BGP import policy preferences:
+              unrestricted (default) has no special semantics;
+              directOnly advises the containing AS to only accept routes
+              with this ASN from direct BGP sessions (peer lock signal).
               An empty list means the ASN refuses inclusion in any AS-SET.
             </dd>
             <dt>flags:</dt>
@@ -631,7 +635,7 @@ UnifiedRasaContent ::= SEQUENCE {
           </li>
           <li>
             For each nested AS-SET in the member list, first verify if
-            the nested AS-SET has published a RASA-AUTH (version 1+ with
+            the nested AS-SET has published a RASA-AUTH (with
             authorizedSet). If so, verify the current AS-SET name is in
             the authorizedIn list. If not authorized, skip the nested AS-SET
             and log a warning. If authorized (or no RASA-AUTH exists), recurse
@@ -712,8 +716,7 @@ RASA-SET (AS2914 publishes):
   asSetName: "AS2914:AS-GLOBAL"
   members: [AS64496, AS64497, AS15169]
 
-RASA-AUTH (AS15169 publishes, version 0):
-  version: 0
+RASA-AUTH (AS15169 publishes):
   authorizedEntity:
     authorizedAS: 15169
   authorizedIn:
@@ -733,8 +736,7 @@ RASA-SET (AS-EVIL publishes):
   asSetName: "AS-EVIL:CUSTOMERS"
   members: [AS64496, AS15169]
 
-RASA-AUTH (AS15169 publishes, version 0):
-  version: 0
+RASA-AUTH (AS15169 publishes):
   authorizedEntity:
     authorizedAS: 15169
   authorizedIn:
@@ -764,8 +766,7 @@ RASA-SET (AS2914 publishes):
   asSetName: "AS2914:AS-GLOBAL"
   nestedSets: ["AS1299:AS-TWELVE99"]
 
-RASA-AUTH (AS1299 publishes, version 1):
-  version: 1
+RASA-AUTH (AS1299 publishes):
   authorizedEntity:
     authorizedSet: "AS1299:AS-TWELVE99"
   authorizedIn:
@@ -780,8 +781,7 @@ RASA-SET (AS-EVIL publishes):
   asSetName: "AS-EVIL:CUSTOMERS"
   nestedSets: ["AS1299:AS-TWELVE99"]
 
-RASA-AUTH (AS1299 publishes, version 1):
-  version: 1
+RASA-AUTH (AS1299 publishes):
   authorizedEntity:
     authorizedSet: "AS1299:AS-TWELVE99"
   authorizedIn:
@@ -799,8 +799,7 @@ RASA-SET (AS2914 publishes):
   asSetName: "AS2914:AS-GLOBAL"
   members: [AS15169, AS64496]
 
-RASA-AUTH (AS15169 publishes, version 2):
-  version: 2
+RASA-AUTH (AS15169 publishes):
   authorizedEntity:
     authorizedAS: 15169
   authorizedIn:
