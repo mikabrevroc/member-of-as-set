@@ -68,19 +68,28 @@ Table of Contents
 
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
    2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   3
-   3.  The member-of-as-set Object . . . . . . . . . . . . . . . . .   3
-     3.1.  Attribute Definitions . . . . . . . . . . . . . . . . . .   3
-     3.2.  Object Semantics  . . . . . . . . . . . . . . . . . . . .   3
-   4.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   4
-     4.1.  Implementation in Tools . . . . . . . . . . . . . . . . .   4
-   5.  Deployment Considerations . . . . . . . . . . . . . . . . . .   4
-   6.  Security Considerations . . . . . . . . . . . . . . . . . . .   4
-   7.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   5
-   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   5
-     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   5
-     8.2.  Informative References  . . . . . . . . . . . . . . . . .   5
-   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .   5
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .   5
+   3.  Relationship to Existing RPSL Mechanisms  . . . . . . . . . .   3
+   4.  The member-of-as-set Object . . . . . . . . . . . . . . . . .   4
+     4.1.  Object Template . . . . . . . . . . . . . . . . . . . . .   4
+     4.2.  Attribute Definitions . . . . . . . . . . . . . . . . . .   4
+       4.2.1.  The member-of-as-set Attribute  . . . . . . . . . . .   4
+       4.2.2.  The member-of Attribute . . . . . . . . . . . . . . .   5
+       4.2.3.  The mnt-by Attribute  . . . . . . . . . . . . . . . .   5
+       4.2.4.  Standard Attributes . . . . . . . . . . . . . . . . .   5
+     4.3.  Object Semantics  . . . . . . . . . . . . . . . . . . . .   5
+     4.4.  Example Objects . . . . . . . . . . . . . . . . . . . . .   6
+   5.  Query and Lookup  . . . . . . . . . . . . . . . . . . . . . .   6
+   6.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   7
+     6.1.  Detailed Verification Algorithm . . . . . . . . . . . . .   7
+     6.2.  Implementation in Tools . . . . . . . . . . . . . . . . .   7
+   7.  Deployment Considerations . . . . . . . . . . . . . . . . . .   8
+   8.  Security Considerations . . . . . . . . . . . . . . . . . . .   8
+   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   8
+   10. References  . . . . . . . . . . . . . . . . . . . . . . . . .   9
+     10.1.  Normative References . . . . . . . . . . . . . . . . . .   9
+     10.2.  Informative References . . . . . . . . . . . . . . . . .   9
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  10
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  10
 
 1.  Introduction
 
@@ -95,15 +104,6 @@ Table of Contents
    vulnerability where malicious operators can include high-value
    autonomous systems in their AS-SET.
 
-   While RPKI [RFC6480] provides origin validation, it does not prevent
-   route leaks.  Similarly, ASPA [RFC9595] provides AS path validation
-   but has seen limited deployment.
-
-   This document defines the member-of-as-set object to enable
-   bidirectional verification with the following goals: authorization of
-   AS-SET membership, verification during expansion, backward
-   compatibility, incremental deployment, and complementarity with
-   existing mechanisms.
 
 
 
@@ -113,6 +113,16 @@ Ytti                     Expires 26 August 2026                 [Page 2]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
+
+   While RPKI [RFC6480] provides origin validation, it does not prevent
+   route leaks.  Similarly, ASPA [RFC9595] provides AS path validation
+   but has seen limited deployment.
+
+   This document defines the member-of-as-set object to enable
+   bidirectional verification with the following goals: authorization of
+   AS-SET membership, verification during expansion, backward
+   compatibility, incremental deployment, and complementarity with
+   existing mechanisms.
 
 2.  Terminology
 
@@ -130,37 +140,27 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    Root AS-SET:  The AS-SET from which an expansion begins.
 
-3.  The member-of-as-set Object
+3.  Relationship to Existing RPSL Mechanisms
 
-   The member-of-as-set object is an RPSL object that allows an
-   autonomous system to declare membership in AS-SETs.  This serves as
-   authorization for inclusion.
+   RFC 2622 [RFC2622] Section 6 defines an optional _member-of_
+   attribute within the aut-num object.  This attribute works in
+   conjunction with the mbrs-by-ref attribute in as-set objects to
+   enable indirect membership declarations.
 
-   member-of-as-set:   [mandatory]  [single]     [primary/lookup key]
-   admin-c:            [mandatory]  [multiple]   [inverse key]
-   tech-c:             [mandatory]  [multiple]   [inverse key]
-   mnt-by:             [mandatory]  [multiple]   [inverse key]
-   source:             [mandatory]  [single]     []
+   The existing mechanism has significant limitations:
 
-3.1.  Attribute Definitions
+   *  It is maintainer-centric (relies on mnt-by matching mbrs-by-ref)
 
-   The member-of-as-set attribute specifies AS-SET objects in which the
-   autonomous system declares membership:
+   *  It requires the aut-num object to exist in the database
 
-   member-of-as-set: AS-SET-1 [ AS-SET-2 ... AS-SET-n ]
+   *  The AS-SET owner cannot directly control membership
 
-   The attribute MUST contain at least one AS-SET name.  AS-SET names
-   MUST be unique within the attribute.
+   *  There is no way for an AS to opt-out of unwanted inclusions
 
-   The mnt-by attribute references maintainers authorized to modify this
-   object.  Changes MUST be authenticated.
+   The member-of-as-set object defined in this document provides a
+   fundamentally different mechanism that addresses these limitations:
 
-3.2.  Object Semantics
-
-   By including an AS-SET name, an autonomous system authorizes its
-   inclusion in expansions of that AS-SET.  If a member-of-as-set object
-   exists, it SHOULD contain a complete list of authorized AS-SETs.
-
+   *  It is a standalone object type (not an attribute within aut-num)
 
 
 
@@ -170,41 +170,257 @@ Ytti                     Expires 26 August 2026                 [Page 3]
 Internet-Draft              Member-of-AS-SET               February 2026
 
 
-4.  Verification Mechanism
+   *  It enables mandatory bidirectional verification
+
+   *  It allows ASes to proactively authorize (or deny) AS-SET inclusion
+
+   *  It does not require the aut-num object to exist
+
+   Both mechanisms can coexist.  An AS may use either or both depending
+   on their operational requirements and the capabilities of their IRR
+   registry.
+
+4.  The member-of-as-set Object
+
+   The member-of-as-set object is an RPSL object that allows an
+   autonomous system to declare membership in AS-SETs.  This serves as
+   authorization for inclusion.
+
+4.1.  Object Template
+
+   The member-of-as-set object follows the standard RPSL object format
+   defined in [RFC2622].
+
+   Attribute          Value                      Type
+   member-of-as-set   <as-number>                mandatory, single-valued,
+                                                 class key
+   member-of          list of <as-set-names>     mandatory, multi-valued
+   mnt-by             list of <mntner-names>     mandatory, multi-valued
+   admin-c            <nic-handle>               mandatory, multi-valued
+   tech-c             <nic-handle>               mandatory, multi-valued
+   remarks            <free-form>                optional, multi-valued
+   notify             <email-address>            optional, multi-valued
+   changed            <email-address> <date>     mandatory, multi-valued
+   source             <registry-name>            mandatory, single-valued
+
+   The class key is the member-of-as-set attribute containing the
+   autonomous system number.  The combination of (object class, class
+   key) uniquely identifies a member-of-as-set object within an IRR
+   database.
+
+4.2.  Attribute Definitions
+
+4.2.1.  The member-of-as-set Attribute
+
+   The member-of-as-set attribute specifies the autonomous system number
+   that this object describes.  It serves as the primary key for the
+   object.
+
+   member-of-as-set: AS3245
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 4]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+   The value MUST be a valid autonomous system number formatted
+   according to [RFC2622], using the AS<number> notation (e.g., AS3245,
+   AS6939, AS65001).
+
+4.2.2.  The member-of Attribute
+
+   The member-of attribute lists the AS-SET objects in which the
+   autonomous system declares membership.  Each value authorizes
+   inclusion in the specified AS-SET.
+
+   member-of: AS3245:LOCAL-PEERING
+   member-of: AS3245:CUSTOMERS
+
+   The attribute MUST contain at least one AS-SET name.  AS-SET names
+   MUST be unique within the attribute.  AS-SET names MUST follow the
+   naming conventions defined in [RFC2622] Section 5:
+
+   *  Flat names start with "as-" (e.g., AS-HURRICANE)
+
+   *  Hierarchical names use colon separators (e.g., AS2914:AS-GLOBAL)
+
+   *  Names are case-insensitive
+
+   *  Maximum component length follows <object-name> limits
+
+4.2.3.  The mnt-by Attribute
+
+   The mnt-by attribute references maintainer objects authorized to
+   create, modify, or delete this member-of-as-set object.  Changes MUST
+   be authenticated according to the authentication scheme specified in
+   the referenced mntner object, per [RFC2622] and [RFC2726].
+
+4.2.4.  Standard Attributes
+
+   The admin-c, tech-c, remarks, notify, changed, and source attributes
+   follow the definitions in [RFC2622].
+
+4.3.  Object Semantics
+
+   By including an AS-SET name in the member-of attribute, an autonomous
+   system authorizes its inclusion in expansions of that AS-SET.
+
+   If a member-of-as-set object exists for an autonomous system,
+   verification tools SHOULD use the complete list of AS-SET names in
+   the member-of attribute to determine authorization.
+
+
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 5]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+   If no member-of-as-set object exists for an autonomous system,
+   verification tools MUST include the system (backward compatibility)
+   unless configured otherwise.
+
+   The member-of-as-set object coexists with the aut-num object but
+   serves a different purpose.  The aut-num object defines routing
+   policy, while the member-of-as-set object defines AS-SET membership
+   authorization.  Both objects may exist for the same autonomous
+   system.
+
+4.4.  Example Objects
+
+   Example member-of-as-set object for Sofia University (AS3245):
+
+   member-of-as-set: AS3245
+   member-of:        AS3245:LOCAL-PEERING
+   mnt-by:           MNTR-SOFIA-UNI
+   admin-c:          DK58
+   tech-c:           OPS4-RIPE
+   remarks:          Sofia University only authorizes local peering AS-SET
+   remarks:          NOT Hurricane Electric or other global AS-SETs
+   changed:          admin@sofia-uni.bg 20260222
+   source:           RIPE
+
+   Example for Hurricane Electric (AS6939):
+
+   member-of-as-set: AS6939
+   member-of:        AS-HURRICANE
+   mnt-by:           MAINT-AS6939
+   admin-c:          HE-ADMIN
+   tech-c:           HE-OPS
+   changed:          ops@he.net 20260222
+   source:           RADB
+
+5.  Query and Lookup
+
+   The member-of-as-set object SHOULD be queried using class-qualified
+   lookup to avoid ambiguity with aut-num objects:
+
+   whois -h whois.ripe.net "member-of-as-set AS3245"
+
+   This returns the member-of-as-set object for AS3245, distinct from
+   the aut-num object which would be returned by:
+
+   whois -h whois.ripe.net "AS3245"
+
+   IRR software SHOULD support class-qualified queries as defined in
+   [RFC2622].
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 6]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+6.  Verification Mechanism
 
    Given an AS-SET S to be expanded, the verification algorithm is:
 
    1.  Recursively expand AS-SET S to obtain all autonomous systems.
 
-   2.  For each autonomous system:
+   2.  For each autonomous system AS:
 
-   Query the IRR for a member-of-as-set object.  If none exists, include
-   the system (backward compatibility).  If a member-of-as-set object
-   exists, check if the root AS-SET appears in the attribute.  Include
-   if yes, prune if no.
+   Query the IRR for a member-of-as-set object for AS.  If none exists,
+   include AS (backward compatibility).  If a member-of-as-set object
+   exists, check if S appears in the member-of attribute.  Include AS if
+   yes, prune if no.
 
    Finally, return the filtered set.
 
-4.1.  Implementation in Tools
+6.1.  Detailed Verification Algorithm
 
-   Tools that expand AS-SETs SHOULD support verification.  They SHOULD
-   query IRR databases, provide enable/disable options, default to
-   disabled, log pruned systems, and cache objects for performance.
+   function expandAndVerify(asSet, rootSet):
+       candidates = expandAsSet(asSet)
+       authorized = []
 
-5.  Deployment Considerations
+       for asn in candidates:
+           memberObj = queryMemberOfAsSet(asn)
+
+           if memberObj is null:
+               # No authorization object exists
+               # Include for backward compatibility
+               authorized.append(asn)
+           else:
+               # Check if root AS-SET is authorized
+               if rootSet in memberObj.memberOf:
+                   authorized.append(asn)
+               else:
+                   # PRUNE: not authorized
+                   logPruned(asn, rootSet)
+
+       return authorized
+
+6.2.  Implementation in Tools
+
+   Tools that expand AS-SETs SHOULD support verification.  They SHOULD:
+
+   *  Query IRR databases for member-of-as-set objects
+
+   *  Provide enable/disable options for verification
+
+   *  Default to disabled to maintain backward compatibility
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 7]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+   *  Log pruned systems with reasons
+
+   *  Cache objects for performance
+
+   *  Support multiple IRR sources
+
+7.  Deployment Considerations
 
    The mechanism is backward compatible: non-participating autonomous
    systems are included as today; non-supporting tools work without
-   modification; IRR software requires no changes.
+   modification; IRR software requires object type registration.
 
-   Deployment proceeds incrementally: tools add support, large
-   autonomous systems create objects, providers enable verification.
+   Deployment proceeds incrementally:
+
+   1.  IRR software adds support for the new object type
+
+   2.  Tools add verification capabilities
+
+   3.  Large autonomous systems create member-of-as-set objects
+
+   4.  Providers enable verification in their filter generation
 
    Member-of-as-set complements RPKI and ASPA.  It does not replace RPKI
    origin validation but adds AS path validation during AS-SET
    expansion.
 
-6.  Security Considerations
+8.  Security Considerations
 
    The mechanism addresses unauthorized AS-SET inclusion, accidental
    misconfiguration, and BGP optimizer leaks.
@@ -216,24 +432,51 @@ Internet-Draft              Member-of-AS-SET               February 2026
    Networks SHOULD use strong authentication [RFC2726], monitor
    expansions, and automate object updates.
 
+   The member-of-as-set object is maintained by the autonomous system
+   owner (via mnt-by).  This ensures that only authorized parties can
+   declare AS-SET membership, unlike the existing mbrs-by-ref mechanism
+   which relies on maintainer trust relationships.
+
+9.  IANA Considerations
+
+   Per [RFC2622] Section 10, this document extends RPSL with a new
+   object type and attributes.
 
 
 
 
-
-Ytti                     Expires 26 August 2026                 [Page 4]
+Ytti                     Expires 26 August 2026                 [Page 8]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
 
-7.  IANA Considerations
+   IANA is requested to register the following in the RPSL Object Types
+   registry:
 
-   IANA is requested to register the member-of-as-set object type and
-   attribute in the RPSL Object Types and Attributes registries.
+   Object Type: member-of-as-set
+   Reference: RFC XXXX (this document)
+   Status: Current
+   Contact: IETF GROW Working Group
 
-8.  References
+   IANA is requested to register the following attributes in the RPSL
+   Attributes registry:
 
-8.1.  Normative References
+   Attribute: member-of-as-set
+   Object Types: member-of-as-set
+   Reference: RFC XXXX (this document)
+   Status: Current
+
+   Attribute: member-of
+   Object Types: member-of-as-set, aut-num
+   Reference: RFC XXXX (this document) for member-of-as-set;
+             RFC 2622 for aut-num
+   Status: Current
+   Note: The member-of attribute has different semantics in
+         member-of-as-set objects versus aut-num objects
+
+10.  References
+
+10.1.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119, 1997,
@@ -249,10 +492,19 @@ Internet-Draft              Member-of-AS-SET               February 2026
    [RFC8174]  Leiba, B., "Ambiguity of Key Words", BCP 14, RFC 8174,
               2017, <https://www.rfc-editor.org/info/rfc8174>.
 
-8.2.  Informative References
+10.2.  Informative References
 
    [RFC6480]  Lepinski, M., "RPKI Infrastructure", RFC 6480, 2012,
               <https://www.rfc-editor.org/info/rfc6480>.
+
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 9]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
 
    [RFC9595]  Weber, K., "BGP ASPA", RFC 9595, 2024,
               <https://www.rfc-editor.org/info/rfc9595>.
@@ -277,4 +529,32 @@ Author's Address
 
 
 
-Ytti                     Expires 26 August 2026                 [Page 5]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ytti                     Expires 26 August 2026                [Page 10]
