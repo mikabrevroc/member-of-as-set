@@ -1382,6 +1382,9 @@ li > p:last-of-type:only-child {
               <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.3">
                 <p id="section-toc.1-1.6.2.3.1"><a href="#section-6.3" class="auto internal xref">6.3</a>.  <a href="#name-enterprise-multi-asn" class="internal xref">Enterprise Multi-ASN</a></p>
 </li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.4">
+                <p id="section-toc.1-1.6.2.4.1"><a href="#section-6.4" class="auto internal xref">6.4</a>.  <a href="#name-irr-namespace-binding" class="internal xref">IRR Namespace Binding</a></p>
+</li>
             </ul>
 </li>
           <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
@@ -1692,17 +1695,11 @@ RasaContent ::= SEQUENCE {
   version          [0] INTEGER DEFAULT 0,
   asSetName            UTF8String,
   containingAS         ASID,
+  irrSource            UTF8String OPTIONAL,
   members              SEQUENCE OF ASID,
   flags                RasaFlags OPTIONAL,
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime
-}
-
-ASID ::= INTEGER (0..4294967295)
-
-RasaFlags ::= BIT STRING {
-  doNotInherit(0),
-  authoritative(1)
 }
 </pre><a href="#section-4.1-4" class="pilcrow">¶</a>
 </div>
@@ -1743,21 +1740,35 @@ RasaFlags ::= BIT STRING {
             member of the AS-SET.<a href="#section-4.2-1.8" class="pilcrow">¶</a>
 </dd>
           <dd class="break"></dd>
-<dt id="section-4.2-1.9">flags:</dt>
+<dt id="section-4.2-1.9">irrSource:</dt>
           <dd style="margin-left: 1.5em" id="section-4.2-1.10">
+            The authoritative IRR database source for this AS-SET. When
+            specified, tools MUST query only this IRR database for the
+            AS-SET definition. Standard values are "RIPE", "RADB",
+            "ARIN", "APNIC", "AFRINIC", "LACNIC". This field is OPTIONAL;
+            when absent, tools query all configured IRR databases (legacy
+            behavior). This field prevents namespace ambiguity attacks
+            where the same AS-SET name exists in multiple IRR databases
+            with different members.<a href="#section-4.2-1.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+<dt id="section-4.2-1.11">flags:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-1.12">
             Optional flags controlling AS-SET behavior. doNotInherit: When
             set, this AS-SET can be referenced by other AS-SETs, but its
             members are not transitively inherited. This prevents the
             "chain of trust" attack where including this AS-SET in a
             malicious AS-SET would also include all members. authoritative:
-            When set, this RASA is the canonical membership list for the
-            AS-SET. Tools should prefer this over IRR data.<a href="#section-4.2-1.10" class="pilcrow">¶</a>
+            When set, this RASA is the ONLY source of truth for the AS-SET.
+            Tools MUST NOT query IRR for this AS-SET; the RASA member list
+            completely replaces any IRR data. The IRR object may still exist
+            but is treated as deprecated/non-authoritative.<a href="#section-4.2-1.12" class="pilcrow">¶</a>
 </dd>
           <dd class="break"></dd>
-<dt id="section-4.2-1.11">notBefore, notAfter:</dt>
-          <dd style="margin-left: 1.5em" id="section-4.2-1.12">
+<dt id="section-4.2-1.13">notBefore, notAfter:</dt>
+          <dd style="margin-left: 1.5em" id="section-4.2-1.14">
             The validity period of the RASA object. These times are
-            interpreted according to RPKI policies.<a href="#section-4.2-1.12" class="pilcrow">¶</a>
+            interpreted according to RPKI policies.<a href="#section-4.2-1.14" class="pilcrow">¶</a>
 </dd>
         <dd class="break"></dd>
 </dl>
@@ -1800,27 +1811,41 @@ RasaFlags ::= BIT STRING {
         </h3>
 <p id="section-5.2-1">
           When expanding an AS-SET for route filter generation, RPKI-aware
-          tools SHOULD perform the following:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+          tools SHOULD perform the following algorithm:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
 <ol start="1" type="1" class="normal type-1" id="section-5.2-2">
           <li id="section-5.2-2.1">
-            Query the IRR for the AS-SET definition, obtaining the list of
-            members (ASNs and nested AS-SETs).<a href="#section-5.2-2.1" class="pilcrow">¶</a>
+            Query RPKI for a RASA object for the AS-SET. If a valid RASA
+            exists and the authoritative flag is set, use ONLY the RASA
+            member list. Do NOT query IRR for this AS-SET. The IRR object
+            is treated as deprecated/non-authoritative.<a href="#section-5.2-2.1" class="pilcrow">¶</a>
 </li>
           <li id="section-5.2-2.2">
+            If a valid RASA exists but authoritative is NOT set, determine
+            the IRR database(s) to query: if irrSource is specified, query
+            ONLY that database. If irrSource is absent, query all configured
+            IRR databases. Merge the RASA member list with the IRR member list.<a href="#section-5.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.2-2.3">
+            If no valid RASA exists, query IRR using the same database
+            selection logic (irrSource if present, otherwise all databases).<a href="#section-5.2-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.2-2.4">
+            For each nested AS-SET in the member list, recurse using the
+            same algorithm. If the parent AS-SET has doNotInherit set,
+            include only the AS-SET reference (not its members) in the
+            expansion.<a href="#section-5.2-2.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.2-2.5">
             For each member ASN, verify if a RASA object exists that lists
             this AS-SET as authorized. If the ASN has published a RASA and
             this AS-SET is not in the authorized list, log a warning or
-            exclude the ASN based on policy.<a href="#section-5.2-2.2" class="pilcrow">¶</a>
-</li>
-          <li id="section-5.2-2.3">
-            For each nested AS-SET, query RPKI for a RASA object for that
-            AS-SET. If a RASA exists with doNotInherit flag set, include
-            only the AS-SET reference in the expansion, not its members.
-            If the authoritative flag is set, use the RASA member list
-            instead of the IRR member list. Otherwise, use the RASA member
-            list as authoritative and recurse.<a href="#section-5.2-2.3" class="pilcrow">¶</a>
+            exclude the ASN based on policy.<a href="#section-5.2-2.5" class="pilcrow">¶</a>
 </li>
         </ol>
+<p id="section-5.2-3">
+          The irrSource field prevents namespace ambiguity attacks where the
+          same AS-SET name exists in multiple IRR databases with different
+          members. When specified, tools MUST NOT query other IRR databases.<a href="#section-5.2-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1892,6 +1917,32 @@ RASA Object (signed by enterprise AS):
   flags:         authoritative(1) = TRUE
 </pre><a href="#section-6.3-2" class="pilcrow">¶</a>
 </div>
+</section>
+</div>
+<div id="namespace-binding">
+<section id="section-6.4">
+        <h3 id="name-irr-namespace-binding">
+<a href="#section-6.4" class="section-number selfRef">6.4. </a><a href="#name-irr-namespace-binding" class="section-name selfRef">IRR Namespace Binding</a>
+        </h3>
+<p id="section-6.4-1">
+          Hurricane Electric (AS6939) wants to prevent namespace ambiguity
+          attacks where AS-HURRICANE exists in multiple IRR databases:<a href="#section-6.4-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-6.4-2">
+<pre>
+RASA Object (signed by AS6939):
+  asSetName:     "AS-HURRICANE"
+  containingAS:  6939
+  irrSource:     "RADB"
+  members:       [6939, 1, 2, 3, ...]
+  flags:         authoritative(1) = TRUE,
+                 doNotInherit(0) = TRUE
+</pre><a href="#section-6.4-2" class="pilcrow">¶</a>
+</div>
+<p id="section-6.4-3">
+          The irrSource field locks AS-HURRICANE to the RADB database only.
+          Tools will NOT query RIPE, ARIN, or other databases for this AS-SET.
+          This prevents attackers from registering AS-HURRICANE in other
+          databases with malicious members.<a href="#section-6.4-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>

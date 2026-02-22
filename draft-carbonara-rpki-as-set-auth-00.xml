@@ -228,17 +228,11 @@ RasaContent ::= SEQUENCE {
   version          [0] INTEGER DEFAULT 0,
   asSetName            UTF8String,
   containingAS         ASID,
+  irrSource            UTF8String OPTIONAL,
   members              SEQUENCE OF ASID,
   flags                RasaFlags OPTIONAL,
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime
-}
-
-ASID ::= INTEGER (0..4294967295)
-
-RasaFlags ::= BIT STRING {
-  doNotInherit(0),
-  authoritative(1)
 }
         </sourcecode>
       </section>
@@ -270,6 +264,17 @@ RasaFlags ::= BIT STRING {
             The containingAS MAY be included in members if it is also a
             member of the AS-SET.
           </dd>
+          <dt>irrSource:</dt>
+          <dd>
+            The authoritative IRR database source for this AS-SET. When
+            specified, tools MUST query only this IRR database for the
+            AS-SET definition. Standard values are "RIPE", "RADB",
+            "ARIN", "APNIC", "AFRINIC", "LACNIC". This field is OPTIONAL;
+            when absent, tools query all configured IRR databases (legacy
+            behavior). This field prevents namespace ambiguity attacks
+            where the same AS-SET name exists in multiple IRR databases
+            with different members.
+          </dd>
           <dt>flags:</dt>
           <dd>
             Optional flags controlling AS-SET behavior. doNotInherit: When
@@ -277,8 +282,10 @@ RasaFlags ::= BIT STRING {
             members are not transitively inherited. This prevents the
             "chain of trust" attack where including this AS-SET in a
             malicious AS-SET would also include all members. authoritative:
-            When set, this RASA is the canonical membership list for the
-            AS-SET. Tools should prefer this over IRR data.
+            When set, this RASA is the ONLY source of truth for the AS-SET.
+            Tools MUST NOT query IRR for this AS-SET; the RASA member list
+            completely replaces any IRR data. The IRR object may still exist
+            but is treated as deprecated/non-authoritative.
           </dd>
           <dt>notBefore, notAfter:</dt>
           <dd>
@@ -311,12 +318,30 @@ RasaFlags ::= BIT STRING {
         <name>AS-SET Expansion with RASA</name>
         <t>
           When expanding an AS-SET for route filter generation, RPKI-aware
-          tools SHOULD perform the following:
+          tools SHOULD perform the following algorithm:
         </t>
         <ol spacing="normal">
           <li>
-            Query the IRR for the AS-SET definition, obtaining the list of
-            members (ASNs and nested AS-SETs).
+            Query RPKI for a RASA object for the AS-SET. If a valid RASA
+            exists and the authoritative flag is set, use ONLY the RASA
+            member list. Do NOT query IRR for this AS-SET. The IRR object
+            is treated as deprecated/non-authoritative.
+          </li>
+          <li>
+            If a valid RASA exists but authoritative is NOT set, determine
+            the IRR database(s) to query: if irrSource is specified, query
+            ONLY that database. If irrSource is absent, query all configured
+            IRR databases. Merge the RASA member list with the IRR member list.
+          </li>
+          <li>
+            If no valid RASA exists, query IRR using the same database
+            selection logic (irrSource if present, otherwise all databases).
+          </li>
+          <li>
+            For each nested AS-SET in the member list, recurse using the
+            same algorithm. If the parent AS-SET has doNotInherit set,
+            include only the AS-SET reference (not its members) in the
+            expansion.
           </li>
           <li>
             For each member ASN, verify if a RASA object exists that lists
@@ -324,16 +349,13 @@ RasaFlags ::= BIT STRING {
             this AS-SET is not in the authorized list, log a warning or
             exclude the ASN based on policy.
           </li>
-          <li>
-            For each nested AS-SET, query RPKI for a RASA object for that
-            AS-SET. If a RASA exists with doNotInherit flag set, include
-            only the AS-SET reference in the expansion, not its members.
-            If the authoritative flag is set, use the RASA member list
-            instead of the IRR member list. Otherwise, use the RASA member
-            list as authoritative and recurse.
-          </li>
         </ol>
-      </section>
+        <t>
+          The irrSource field prevents namespace ambiguity attacks where the
+          same AS-SET name exists in multiple IRR databases with different
+          members. When specified, tools MUST NOT query other IRR databases.
+        </t>
+    </section>
     </section>
 
     <section anchor="use-cases">
@@ -388,6 +410,28 @@ RASA Object (signed by enterprise AS):
   members:       [64501, 64502, 64503]
   flags:         authoritative(1) = TRUE
         </sourcecode>
+      </section>
+      <section anchor="namespace-binding">
+        <name>IRR Namespace Binding</name>
+        <t>
+          Hurricane Electric (AS6939) wants to prevent namespace ambiguity
+          attacks where AS-HURRICANE exists in multiple IRR databases:
+        </t>
+        <sourcecode type="text">
+RASA Object (signed by AS6939):
+  asSetName:     "AS-HURRICANE"
+  containingAS:  6939
+  irrSource:     "RADB"
+  members:       [6939, 1, 2, 3, ...]
+  flags:         authoritative(1) = TRUE,
+                 doNotInherit(0) = TRUE
+        </sourcecode>
+        <t>
+          The irrSource field locks AS-HURRICANE to the RADB database only.
+          Tools will NOT query RIPE, ARIN, or other databases for this AS-SET.
+          This prevents attackers from registering AS-HURRICANE in other
+          databases with malicious members.
+        </t>
       </section>
     </section>
 
