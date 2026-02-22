@@ -1520,7 +1520,7 @@ li > p:last-of-type:only-child {
       </h2>
 <p id="section-4-1">
         The member-of-as-set object is an RPSL object that allows an
-        autonomous system to declare membership in AS-SETs. This serves
+        autonomous system or AS-SET to declare membership in AS-SETs. This serves
         as authorization for inclusion.<a href="#section-4-1" class="pilcrow">¶</a></p>
 <div id="object-template">
 <section id="section-4.1">
@@ -1533,8 +1533,8 @@ li > p:last-of-type:only-child {
 <div class="lang-text sourcecode" id="section-4.1-2">
 <pre>
 Attribute          Value                      Type
-member-of-as-set   &lt;as-number&gt;                mandatory, single-valued,
-                                              class key
+member-of-as-set   &lt;as-number&gt; or             mandatory, single-valued,
+                   &lt;as-set-name&gt;              class key
 member-of          list of &lt;as-set-names&gt;     mandatory, multi-valued
 mnt-by             list of &lt;mntner-names&gt;     mandatory, multi-valued
 admin-c            &lt;nic-handle&gt;               mandatory, multi-valued
@@ -1546,10 +1546,10 @@ source             &lt;registry-name&gt;            mandatory, single-valued
 </pre><a href="#section-4.1-2" class="pilcrow">¶</a>
 </div>
 <p id="section-4.1-3">
-          The class key is the member-of-as-set attribute containing the
-          autonomous system number. The combination of (object class,
-          class key) uniquely identifies a member-of-as-set object within
-          an IRR database.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
+          The class key is the member-of-as-set attribute containing either
+          an autonomous system number or an AS-SET name. The combination of
+          (object class, class key) uniquely identifies a member-of-as-set
+          object within an IRR database.<a href="#section-4.1-3" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="object-attr">
@@ -1563,18 +1563,37 @@ source             &lt;registry-name&gt;            mandatory, single-valued
 <a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-the-member-of-as-set-attrib" class="section-name selfRef">The member-of-as-set Attribute</a>
           </h4>
 <p id="section-4.2.1-1">
-            The member-of-as-set attribute specifies the autonomous system
-            number that this object describes. It serves as the primary key
-            for the object.<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
-<div class="lang-text sourcecode" id="section-4.2.1-2">
+            The member-of-as-set attribute specifies the identifier that this
+            object describes. It serves as the primary key for the object.
+            The attribute <span class="bcp14">MAY</span> contain either an autonomous system
+            number or an AS-SET name, allowing both individual ASNs and AS-SETs
+            themselves to declare membership authorization:<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.1-2.1">If the value is an AS number (e.g., AS3245), the object
+            authorizes that ASN's inclusion in the listed AS-SETs<a href="#section-4.2.1-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.1-2.2">If the value is an AS-SET name (e.g., AS-HURRICANE), the object
+            authorizes that AS-SET's inclusion as a member of other AS-SETs<a href="#section-4.2.1-2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<div class="lang-text sourcecode" id="section-4.2.1-3">
 <pre>
 member-of-as-set: AS3245
-</pre><a href="#section-4.2.1-2" class="pilcrow">¶</a>
+member-of-as-set: AS-HURRICANE
+</pre><a href="#section-4.2.1-3" class="pilcrow">¶</a>
 </div>
-<p id="section-4.2.1-3">
-            The value <span class="bcp14">MUST</span> be a valid autonomous system number
-            formatted according to <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span>, using the
-            AS&lt;number&gt; notation (e.g., AS3245, AS6939, AS65001).<a href="#section-4.2.1-3" class="pilcrow">¶</a></p>
+<p id="section-4.2.1-4">
+            The value <span class="bcp14">MUST</span> be either:<a href="#section-4.2.1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.1-5.1">A valid autonomous system number formatted according to
+            <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span>, using the AS&lt;number&gt; notation
+            (e.g., AS3245, AS6939, AS65001); or<a href="#section-4.2.1-5.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.2.1-5.2">A valid AS-SET name following the naming conventions defined
+            in <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span> Section 5 (e.g., AS-HURRICANE,
+            AS2914:AS-GLOBAL)<a href="#section-4.2.1-5.2" class="pilcrow">¶</a>
+</li>
+          </ul>
 </section>
 </div>
 <div id="attr-member-of">
@@ -1584,7 +1603,7 @@ member-of-as-set: AS3245
           </h4>
 <p id="section-4.2.2-1">
             The member-of attribute lists the AS-SET objects in which the
-            autonomous system declares membership. Each value authorizes
+            autonomous system or AS-SET declares membership. Each value authorizes
             inclusion in the specified AS-SET.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
 <div class="lang-text sourcecode" id="section-4.2.2-2">
 <pre>
@@ -1641,21 +1660,21 @@ member-of: AS3245:CUSTOMERS
         </h3>
 <p id="section-4.3-1">
           By including an AS-SET name in the member-of attribute, an autonomous
-          system authorizes its inclusion in expansions of that AS-SET.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+          system or AS-SET authorizes its inclusion in expansions of that AS-SET.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
 <p id="section-4.3-2">
-          If a member-of-as-set object exists for an autonomous system,
+          If a member-of-as-set object exists for an autonomous system or AS-SET,
           verification tools <span class="bcp14">SHOULD</span> use the complete list of
           AS-SET names in the member-of attribute to determine authorization.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
 <p id="section-4.3-3">
-          If no member-of-as-set object exists for an autonomous system,
-          verification tools <span class="bcp14">MUST</span> include the system (backward
-          compatibility) unless configured otherwise.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
+          If no member-of-as-set object exists for an autonomous system or AS-SET,
+          verification tools <span class="bcp14">MUST</span> include the system or AS-SET
+          (backward compatibility) unless configured otherwise.<a href="#section-4.3-3" class="pilcrow">¶</a></p>
 <p id="section-4.3-4">
-          The member-of-as-set object coexists with the aut-num object but
-          serves a different purpose. The aut-num object defines routing
-          policy, while the member-of-as-set object defines AS-SET membership
-          authorization. Both objects may exist for the same autonomous
-          system.<a href="#section-4.3-4" class="pilcrow">¶</a></p>
+          The member-of-as-set object coexists with the aut-num and as-set objects
+          but serves a different purpose. The aut-num object defines routing
+          policy, the as-set object defines a set of autonomous systems, and
+          the member-of-as-set object defines AS-SET membership authorization.
+          All objects may exist for the same autonomous system or AS-SET.<a href="#section-4.3-4" class="pilcrow">¶</a></p>
 </section>
 </div>
 <div id="example-objects">
@@ -1690,6 +1709,21 @@ tech-c:           HE-OPS
 changed:          ops@he.net 20260222
 source:           RADB
 </pre><a href="#section-4.4-4" class="pilcrow">¶</a>
+</div>
+<p id="section-4.4-5">
+          Example for AS-HURRICANE itself (authorizing inclusion in other AS-SETs):<a href="#section-4.4-5" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-4.4-6">
+<pre>
+member-of-as-set: AS-HURRICANE
+member-of:        AS-GLOBAL-TRANSIT
+mnt-by:           MAINT-AS6939
+admin-c:          HE-ADMIN
+tech-c:           HE-OPS
+remarks:          Hurricane Electric authorizes inclusion in global transit AS-SET
+remarks:          NOT in customer or regional AS-SETs
+changed:          ops@he.net 20260222
+source:           RADB
+</pre><a href="#section-4.4-6" class="pilcrow">¶</a>
 </div>
 </section>
 </div>
@@ -1843,7 +1877,7 @@ function expandAndVerify(asSet, rootSet):
         object updates.<a href="#section-8-3" class="pilcrow">¶</a></p>
 <p id="section-8-4">
         The member-of-as-set object is maintained by the autonomous system
-        owner (via mnt-by). This ensures that only authorized parties can
+        or AS-SET owner (via mnt-by). This ensures that only authorized parties can
         declare AS-SET membership, unlike the existing mbrs-by-ref mechanism
         which relies on maintainer trust relationships.<a href="#section-8-4" class="pilcrow">¶</a></p>
 </section>
