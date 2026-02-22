@@ -71,24 +71,30 @@ Table of Contents
    3.  Relationship to Existing RPSL Mechanisms  . . . . . . . . . .   3
    4.  The member-of-as-set Object . . . . . . . . . . . . . . . . .   4
      4.1.  Object Template . . . . . . . . . . . . . . . . . . . . .   4
-     4.2.  Attribute Definitions . . . . . . . . . . . . . . . . . .   4
-       4.2.1.  The member-of-as-set Attribute  . . . . . . . . . . .   4
+     4.2.  Attribute Definitions . . . . . . . . . . . . . . . . . .   5
+       4.2.1.  The member-of-as-set Attribute  . . . . . . . . . . .   5
        4.2.2.  Other Attributes  . . . . . . . . . . . . . . . . . .   5
      4.3.  Object Semantics  . . . . . . . . . . . . . . . . . . . .   5
      4.4.  Example Objects . . . . . . . . . . . . . . . . . . . . .   6
    5.  Query and Lookup  . . . . . . . . . . . . . . . . . . . . . .   7
    6.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   7
-     6.1.  Detailed Verification Algorithm . . . . . . . . . . . . .   7
+     6.1.  Detailed Verification Algorithm . . . . . . . . . . . . .   8
      6.2.  Implementation in Tools . . . . . . . . . . . . . . . . .   8
-   7.  Deployment Considerations . . . . . . . . . . . . . . . . . .   8
+   7.  Deployment Considerations . . . . . . . . . . . . . . . . . .   9
    8.  Security Considerations . . . . . . . . . . . . . . . . . . .   9
      8.1.  Chain of Trust Limitation . . . . . . . . . . . . . . . .   9
-   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  10
-   10. References  . . . . . . . . . . . . . . . . . . . . . . . . .  10
-     10.1.  Normative References . . . . . . . . . . . . . . . . . .  10
-     10.2.  Informative References . . . . . . . . . . . . . . . . .  11
-   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  11
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  11
+   9.  Future Mitigations  . . . . . . . . . . . . . . . . . . . . .  10
+     9.1.  Protected-Set Flag  . . . . . . . . . . . . . . . . . . .  10
+     9.2.  Stop-on-Missing-Protect Mode  . . . . . . . . . . . . . .  10
+     9.3.  Do-Not-Inherit Flag . . . . . . . . . . . . . . . . . . .  10
+     9.4.  Signed Assertions . . . . . . . . . . . . . . . . . . . .  11
+     9.5.  Bootstrap Protected Sets  . . . . . . . . . . . . . . . .  11
+   10. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  11
+   11. References  . . . . . . . . . . . . . . . . . . . . . . . . .  11
+     11.1.  Normative References . . . . . . . . . . . . . . . . . .  11
+     11.2.  Informative References . . . . . . . . . . . . . . . . .  12
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  12
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  12
 
 1.  Introduction
 
@@ -96,6 +102,17 @@ Table of Contents
    used by network operators to generate BGP route filters.  The Routing
    Policy Specification Language (RPSL) defines the as-set object, which
    represents a set of autonomous systems.
+
+
+
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 2]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
 
    A fundamental limitation of current AS-SET objects is their
    unidirectional nature.  An AS-SET owner can include any autonomous
@@ -106,13 +123,6 @@ Table of Contents
    While RPKI [RFC6480] provides origin validation, it does not prevent
    route leaks.  Similarly, ASPA [RFC9595] provides AS path validation
    but has seen limited deployment.
-
-
-
-Ytti                     Expires 27 August 2026                 [Page 2]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
 
    This document defines the member-of-as-set object to enable
    bidirectional verification with the following goals: authorization of
@@ -153,6 +163,13 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    *  There is no way for an AS to opt-out of unwanted inclusions
 
+
+
+Ytti                     Expires 27 August 2026                 [Page 3]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
    The member-of-as-set object defined in this document provides a
    fundamentally different mechanism that addresses these limitations:
 
@@ -161,14 +178,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    *  It enables mandatory bidirectional verification
 
    *  It allows ASes to proactively authorize (or deny) AS-SET inclusion
-
-
-
-
-Ytti                     Expires 27 August 2026                 [Page 3]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
 
    *  It does not require the aut-num object to exist
 
@@ -206,6 +215,17 @@ Internet-Draft              Member-of-AS-SET               February 2026
    set values) uniquely identifies a member-of-as-set object within an
    IRR database.
 
+
+
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 4]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
 4.2.  Attribute Definitions
 
 4.2.1.  The member-of-as-set Attribute
@@ -218,13 +238,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    *  If a value is an AS number (e.g., AS3245), the object authorizes
       that ASN's inclusion in the listed AS-SETs
-
-
-
-Ytti                     Expires 27 August 2026                 [Page 4]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
 
    *  If a value is an AS-SET name (e.g., AS-HURRICANE), the object
       authorizes that AS-SET's inclusion as a member of other AS-SETs
@@ -262,6 +275,13 @@ Internet-Draft              Member-of-AS-SET               February 2026
    member-of attribute, verification tools MUST prune the system or AS-
    SET from the expansion.
 
+
+
+Ytti                     Expires 27 August 2026                 [Page 5]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
    If no member-of-as-set object exists for an autonomous system or AS-
    SET, verification tools MUST include the system or AS-SET (backward
    compatibility) unless configured otherwise.
@@ -272,15 +292,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    systems, and the member-of-as-set object defines AS-SET membership
    authorization.  All objects may exist for the same autonomous system
    or AS-SET.
-
-
-
-
-
-Ytti                     Expires 27 August 2026                 [Page 5]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
 
 4.4.  Example Objects
 
@@ -313,18 +324,7 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    Example for Google AS-SET (AS-GOOGLE) in transit provider AS-SETs:
 
-   member-of-as-set: AS-GOOGLE
-   member-of:        AS-GOOGLE-PEERING
-   member-of:        AS2914:AS-GLOBAL
-   member-of:        AS6461:AS-MFNX
-   mnt-by:           MAINT-AS15169
-   admin-c:          GOOG-ADMIN
-   tech-c:           GOOG-NOC
-   remarks:          Google AS-SET only authorized in Tier-1 provider AS-SETs
-   changed:          peering@google.com 20260222
-   source:           RADB
 
-   Example with multiple ASNs (enterprise authorizing across providers):
 
 
 
@@ -337,6 +337,19 @@ Ytti                     Expires 27 August 2026                 [Page 6]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
+
+   member-of-as-set: AS-GOOGLE
+   member-of:        AS-GOOGLE-PEERING
+   member-of:        AS2914:AS-GLOBAL
+   member-of:        AS6461:AS-MFNX
+   mnt-by:           MAINT-AS15169
+   admin-c:          GOOG-ADMIN
+   tech-c:           GOOG-NOC
+   remarks:          Google AS-SET only authorized in Tier-1 provider AS-SETs
+   changed:          peering@google.com 20260222
+   source:           RADB
+
+   Example with multiple ASNs (enterprise authorizing across providers):
 
    member-of-as-set: AS64501
    member-of-as-set: AS64502
@@ -374,6 +387,13 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    2.  For each autonomous system AS:
 
+
+
+Ytti                     Expires 27 August 2026                 [Page 7]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
    Query the IRR for a member-of-as-set object where AS appears in the
    member-of-as-set attribute.  If none exists, include AS (backward
    compatibility).  If a member-of-as-set object exists, check if S
@@ -382,17 +402,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    Finally, return the filtered set.
 
 6.1.  Detailed Verification Algorithm
-
-
-
-
-
-
-
-Ytti                     Expires 27 August 2026                 [Page 7]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
 
    function expandAndVerify(asSet, rootSet):
        candidates = expandAsSet(asSet)
@@ -431,6 +440,16 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    *  Support multiple IRR sources
 
+
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 8]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
 7.  Deployment Considerations
 
    The mechanism is backward compatible: non-participating autonomous
@@ -442,13 +461,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    1.  IRR software adds support for the new object type
 
    2.  Tools add verification capabilities
-
-
-
-Ytti                     Expires 27 August 2026                 [Page 8]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
 
    3.  Large autonomous systems create member-of-as-set objects
 
@@ -487,6 +499,13 @@ Internet-Draft              Member-of-AS-SET               February 2026
    chain does not use member-of-as-set, the entire chain is vulnerable
    to hijacking.
 
+
+
+Ytti                     Expires 27 August 2026                 [Page 9]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
    Example: Google (AS15169) creates a member-of-as-set object
    authorizing inclusion only in AS1299:AS-TWELVE99 (Arelion).  A
    malicious ISP creates AS-MALICIOUS containing AS1299:AS-TWELVE99.  If
@@ -498,14 +517,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    This limitation means member-of-as-set requires _coordinated
    adoption_ to be effective.  Protection is only achieved when:
 
-
-
-
-Ytti                     Expires 27 August 2026                 [Page 9]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
    *  Both parties participate (the ASN AND the AS-SET owner)
 
    *  The entire chain is protected (every intermediate AS-SET)
@@ -516,7 +527,55 @@ Internet-Draft              Member-of-AS-SET               February 2026
    mechanism should be viewed as an opt-in mutual protection framework
    rather than a unilateral security control.
 
-9.  IANA Considerations
+9.  Future Mitigations
+
+   While this document specifies the basic member-of-as-set mechanism,
+   the following enhancements may be considered for future versions to
+   address the chain-of-trust limitation documented in Section 8.1:
+
+9.1.  Protected-Set Flag
+
+   A new attribute `protected-set` could be added to AS-SET objects.
+   When set to "yes", the AS-SET can only be expanded if the AS-SET
+   owner has created a corresponding member-of-as-set object.  This
+   provides AS-SET-level opt-in protection.
+
+9.2.  Stop-on-Missing-Protect Mode
+
+   IRR software could implement a strict mode that aborts AS-SET
+   expansion when encountering an AS-SET without member-of-as-set
+   protection, returning an error rather than silently including
+   unprotected AS-SETs.
+
+9.3.  Do-Not-Inherit Flag
+
+   An AS-SET-level `do-not-inherit` flag could prevent transitive
+   inheritance of AS-SET members.  When set, the AS-SET can be
+   referenced by other AS-SETs, but its members are not expanded.  This
+   allows Tier-1 providers to protect customer AS-SETs unilaterally.
+
+
+
+
+Ytti                     Expires 27 August 2026                [Page 10]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
+9.4.  Signed Assertions
+
+   Integration with RPKI could provide cryptographically signed member-
+   of-as-set assertions.  This would provide authentication independent
+   of IRR maintainer relationships.
+
+9.5.  Bootstrap Protected Sets
+
+   A curated list of well-known "core" AS-SETs (Tier-1 providers) could
+   be designated as requiring protection.  This would provide immediate
+   value for content providers while the ecosystem adopts the mechanism
+   broadly.
+
+10.  IANA Considerations
 
    Per [RFC2622] Section 10, this document extends RPSL with a new
    object type and attributes.
@@ -541,26 +600,27 @@ Internet-Draft              Member-of-AS-SET               February 2026
    member-of-as-set objects, it follows the syntax and semantics defined
    in RFC 2622.
 
-10.  References
+11.  References
 
-10.1.  Normative References
+11.1.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119, 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
 
-   [RFC2622]  Alaettinoglu, C., Villamizar, C., and E. Gerich, "Routing
-              Policy Specification Language (RPSL)", RFC 2622, 1999,
-              <https://www.rfc-editor.org/info/rfc2622>.
 
 
 
 
 
-Ytti                     Expires 27 August 2026                [Page 10]
+Ytti                     Expires 27 August 2026                [Page 11]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
+
+   [RFC2622]  Alaettinoglu, C., Villamizar, C., and E. Gerich, "Routing
+              Policy Specification Language (RPSL)", RFC 2622, 1999,
+              <https://www.rfc-editor.org/info/rfc2622>.
 
    [RFC2726]  Blunk, L., "PGP Authentication for RIPE Database Updates",
               RFC 2726, 1999, <https://www.rfc-editor.org/info/rfc2726>.
@@ -568,7 +628,7 @@ Internet-Draft              Member-of-AS-SET               February 2026
    [RFC8174]  Leiba, B., "Ambiguity of Key Words", BCP 14, RFC 8174,
               2017, <https://www.rfc-editor.org/info/rfc8174>.
 
-10.2.  Informative References
+11.2.  Informative References
 
    [RFC6480]  Lepinski, M., "RPKI Infrastructure", RFC 6480, 2012,
               <https://www.rfc-editor.org/info/rfc6480>.
@@ -609,8 +669,4 @@ Author's Address
 
 
 
-
-
-
-
-Ytti                     Expires 27 August 2026                [Page 11]
+Ytti                     Expires 27 August 2026                [Page 12]

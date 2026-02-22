@@ -485,6 +485,61 @@ function expandAndVerify(asSet, rootSet):
       </section>
     </section>
 
+    <section anchor="future-mitigations">
+      <name>Future Mitigations</name>
+      <t>
+        While this document specifies the basic member-of-as-set mechanism,
+        the following enhancements may be considered for future versions
+        to address the chain-of-trust limitation documented in
+        <xref target="chain-of-trust"/>:
+      </t>
+      <section anchor="protected-set-flag">
+        <name>Protected-Set Flag</name>
+        <t>
+          A new attribute `protected-set` could be added to AS-SET objects.
+          When set to "yes", the AS-SET can only be expanded if the AS-SET
+          owner has created a corresponding member-of-as-set object.
+          This provides AS-SET-level opt-in protection.
+        </t>
+      </section>
+      <section anchor="stop-on-missing">
+        <name>Stop-on-Missing-Protect Mode</name>
+        <t>
+          IRR software could implement a strict mode that aborts AS-SET
+          expansion when encountering an AS-SET without member-of-as-set
+          protection, returning an error rather than silently including
+          unprotected AS-SETs.
+        </t>
+      </section>
+      <section anchor="do-not-inherit">
+        <name>Do-Not-Inherit Flag</name>
+        <t>
+          An AS-SET-level `do-not-inherit` flag could prevent transitive
+          inheritance of AS-SET members. When set, the AS-SET can be
+          referenced by other AS-SETs, but its members are not expanded.
+          This allows Tier-1 providers to protect customer AS-SETs
+          unilaterally.
+        </t>
+      </section>
+      <section anchor="signed-assertions">
+        <name>Signed Assertions</name>
+        <t>
+          Integration with RPKI could provide cryptographically signed
+          member-of-as-set assertions. This would provide authentication
+          independent of IRR maintainer relationships.
+        </t>
+      </section>
+      <section anchor="bootstrap-sets">
+        <name>Bootstrap Protected Sets</name>
+        <t>
+          A curated list of well-known "core" AS-SETs (Tier-1 providers)
+          could be designated as requiring protection. This would provide
+          immediate value for content providers while the ecosystem
+          adopts the mechanism broadly.
+        </t>
+      </section>
+    </section>
+
     <section anchor="iana">
       <name>IANA Considerations</name>
       <t>
