@@ -647,8 +647,9 @@ UnifiedRasaContent ::= SEQUENCE {
           <li>
             For each member ASN, verify if a RASA object exists that lists
             this AS-SET as authorized. If the ASN has published a RASA and
-            this AS-SET is not in the authorized list, log a warning or
-            exclude the ASN based on policy.
+            this AS-SET is not in the authorized list, exclude the ASN.
+            The strictMode flag controls logging: if TRUE, log a security
+            event; if FALSE, log a warning.
           </li>
         </ol>
         <t>
@@ -759,7 +760,7 @@ RASA-AUTH (AS398465): None published
 Result: AS398465 is INCLUDED (no objection from member)
         </sourcecode>
         <t>
-          Example 4: AS-SET authorization (version 1 CHOICE)
+          Example 4: AS-SET authorization
         </t>
         <sourcecode type="text">
 RASA-SET (AS2914 publishes):
@@ -775,8 +776,11 @@ RASA-AUTH (AS1299 publishes):
   strictMode: TRUE
 
 Result: AS1299:AS-TWELVE99 is INCLUDED (authorized)
-
-Example 5: AS-SET authorization denied
+        </sourcecode>
+        <t>
+          Example 5: AS-SET authorization denied
+        </t>
+        <sourcecode type="text">
 RASA-SET (AS-EVIL publishes):
   asSetName: "AS-EVIL:CUSTOMERS"
   nestedSets: ["AS1299:AS-TWELVE99"]
