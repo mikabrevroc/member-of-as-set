@@ -79,16 +79,16 @@ Table of Contents
      4.4.  Example Objects . . . . . . . . . . . . . . . . . . . . .   6
    5.  Query and Lookup  . . . . . . . . . . . . . . . . . . . . . .   7
    6.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   7
-     6.1.  Detailed Verification Algorithm . . . . . . . . . . . . .   8
+     6.1.  Detailed Verification Algorithm . . . . . . . . . . . . .   7
      6.2.  Implementation in Tools . . . . . . . . . . . . . . . . .   8
-   7.  Deployment Considerations . . . . . . . . . . . . . . . . . .   9
+   7.  Deployment Considerations . . . . . . . . . . . . . . . . . .   8
    8.  Security Considerations . . . . . . . . . . . . . . . . . . .   9
    9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   9
    10. References  . . . . . . . . . . . . . . . . . . . . . . . . .  10
      10.1.  Normative References . . . . . . . . . . . . . . . . . .  10
      10.2.  Informative References . . . . . . . . . . . . . . . . .  10
-   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  11
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  11
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  10
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  10
 
 1.  Introduction
 
@@ -250,17 +250,8 @@ Internet-Draft              Member-of-AS-SET               February 2026
    member-of: AS3245:LOCAL-PEERING
    member-of: AS3245:CUSTOMERS
 
-   The attribute MUST contain at least one AS-SET name.  AS-SET names
-   MUST be unique within the attribute.  AS-SET names MUST follow the
-   naming conventions defined in [RFC2622] Section 5:
-
-   *  Flat names start with "as-" (e.g., AS-HURRICANE)
-
-   *  Hierarchical names use colon separators (e.g., AS2914:AS-GLOBAL)
-
-   *  Names are case-insensitive
-
-   *  Maximum component length follows <object-name> limits
+   AS-SET names in the member-of attribute MUST follow the naming
+   conventions defined in [RFC2622] Section 5.
 
 4.2.3.  Other Attributes
 
@@ -273,15 +264,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    autonomous systems and AS-SETs listed in member-of-as-set authorize
    their inclusion in expansions of that AS-SET.
 
-
-
-
-
-Ytti                     Expires 26 August 2026                 [Page 5]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
    If a member-of-as-set object exists for an autonomous system or AS-
    SET, the member-of attribute contains an exhaustive whitelist of AS-
    SETs in which the system or AS-SET authorizes inclusion.
@@ -290,6 +272,15 @@ Internet-Draft              Member-of-AS-SET               February 2026
    If an AS-SET expansion includes the system or AS-SET but that AS-SET
    is NOT listed in the member-of attribute, verification tools MUST
    prune the system or AS-SET from the expansion.
+
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 5]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
 
    If no member-of-as-set object exists for an autonomous system or AS-
    SET, verification tools MUST include the system or AS-SET (backward
@@ -329,15 +320,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    Example for AS-HURRICANE itself (authorizing inclusion in other AS-
    SETs):
 
-
-
-
-
-Ytti                     Expires 26 August 2026                 [Page 6]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
    member-of-as-set: AS-HURRICANE
    member-of:        AS-GLOBAL-TRANSIT
    mnt-by:           MAINT-AS6939
@@ -347,6 +329,14 @@ Internet-Draft              Member-of-AS-SET               February 2026
    remarks:          NOT in customer or regional AS-SETs
    changed:          ops@he.net 20260222
    source:           RADB
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 6]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
 
    Example with multiple ASNs (enterprise with multiple AS numbers):
 
@@ -385,15 +375,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    2.  For each autonomous system AS:
 
-
-
-
-
-Ytti                     Expires 26 August 2026                 [Page 7]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
    Query the IRR for a member-of-as-set object where AS appears in the
    member-of-as-set attribute.  If none exists, include AS (backward
    compatibility).  If a member-of-as-set object exists, check if S
@@ -402,6 +383,16 @@ Internet-Draft              Member-of-AS-SET               February 2026
    Finally, return the filtered set.
 
 6.1.  Detailed Verification Algorithm
+
+
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 7]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
 
    function expandAndVerify(asSet, rootSet):
        candidates = expandAsSet(asSet)
@@ -440,16 +431,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    *  Support multiple IRR sources
 
-
-
-
-
-
-Ytti                     Expires 26 August 2026                 [Page 8]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
 7.  Deployment Considerations
 
    The mechanism is backward compatible: non-participating autonomous
@@ -461,6 +442,13 @@ Internet-Draft              Member-of-AS-SET               February 2026
    1.  IRR software adds support for the new object type
 
    2.  Tools add verification capabilities
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 8]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
 
    3.  Large autonomous systems create member-of-as-set objects
 
@@ -495,6 +483,18 @@ Internet-Draft              Member-of-AS-SET               February 2026
    IANA is requested to register the following in the RPSL Object Types
    registry:
 
+   Object Type: member-of-as-set
+   Reference: RFC XXXX (this document)
+   Status: Current
+   Contact: IETF GROW Working Group
+
+   IANA is requested to register the following attributes in the RPSL
+   Attributes registry:
+
+
+
+
+
 
 
 
@@ -505,14 +505,6 @@ Ytti                     Expires 26 August 2026                 [Page 9]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
-
-   Object Type: member-of-as-set
-   Reference: RFC XXXX (this document)
-   Status: Current
-   Contact: IETF GROW Working Group
-
-   IANA is requested to register the following attributes in the RPSL
-   Attributes registry:
 
    Attribute: member-of-as-set
    Object Types: member-of-as-set
@@ -553,15 +545,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    [RFC9595]  Weber, K., "BGP ASPA", RFC 9595, 2024,
               <https://www.rfc-editor.org/info/rfc9595>.
 
-
-
-
-
-Ytti                     Expires 26 August 2026                [Page 10]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
 Acknowledgments
 
    Thanks to the #networker IRC community for discussions leading to
@@ -571,7 +554,24 @@ Author's Address
 
    Saku Ytti
    NTT Communications Corporation
+
+
+
+Ytti                     Expires 26 August 2026                [Page 10]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
    Email: saku@ytti.cy
+
+
+
+
+
+
+
+
+
 
 
 

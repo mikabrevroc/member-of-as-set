@@ -220,17 +220,9 @@ member-of: AS3245:LOCAL-PEERING
 member-of: AS3245:CUSTOMERS
           </sourcecode>
           <t>
-            The attribute <bcp14>MUST</bcp14> contain at least one AS-SET name.
-            AS-SET names <bcp14>MUST</bcp14> be unique within the attribute.
-            AS-SET names <bcp14>MUST</bcp14> follow the naming conventions
-            defined in <xref target="RFC2622"/> Section 5:
+            AS-SET names in the member-of attribute <bcp14>MUST</bcp14> follow
+            the naming conventions defined in <xref target="RFC2622"/> Section 5.
           </t>
-          <ul spacing="normal">
-            <li>Flat names start with "as-" (e.g., AS-HURRICANE)</li>
-            <li>Hierarchical names use colon separators (e.g., AS2914:AS-GLOBAL)</li>
-            <li>Names are case-insensitive</li>
-            <li>Maximum component length follows &lt;object-name&gt; limits</li>
-          </ul>
         </section>
 
         <section anchor="attr-other">
