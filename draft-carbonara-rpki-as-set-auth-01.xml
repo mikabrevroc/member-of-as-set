@@ -634,12 +634,11 @@ UnifiedRasaContent ::= SEQUENCE {
             the nested AS-SET has published a RASA-AUTH (version 1+ with
             authorizedSet). If so, verify the current AS-SET name is in
             the authorizedIn list. If not authorized, skip the nested AS-SET
-            and log a warning. If authorized, check propagation:
-            If propagation is "directOnly", skip the nested AS-SET
-            and log that peer lock prevented transitive inclusion.
-            If propagation is "unrestricted", recurse using the same
-            algorithm. If the parent AS-SET has doNotInherit set, include
-            only the AS-SET reference (not its members) in the expansion.
+            and log a warning. If authorized (or no RASA-AUTH exists), recurse
+            using the same algorithm. If the parent AS-SET has doNotInherit set,
+            include only the AS-SET reference (not its members) in the expansion.
+            Note: The propagation field in RASA-AUTH is for BGP import policy
+            signaling and does NOT affect AS-SET expansion.
           </li>
           <li>
             For each member ASN, verify if a RASA object exists that lists
@@ -682,12 +681,11 @@ UnifiedRasaContent ::= SEQUENCE {
           </li>
           <li>
             If RASA-AUTH exists: verify this AS-SET name is in the
-            RASA-AUTH.authorizedIn list. If present, check the propagation
-            scope. If propagation is "directOnly" and this is a nested
-            expansion (not direct inclusion), exclude the ASN and log
-            that peer lock was enforced. If propagation is "unrestricted"
-            or this is direct inclusion, include the ASN. If the AS-SET
-            is not in authorizedIn, exclude the ASN.
+            RASA-AUTH.authorizedIn list. If present, include the ASN.
+            If the AS-SET is not in authorizedIn, exclude the ASN.
+            Note: The propagation field (directOnly/unrestricted) does NOT
+            affect AS-SET expansion decisions. It is an advisory signal for
+            BGP import policy at the containing AS's discretion.
           </li>
           <li>
             If RASA-AUTH exists and strictMode is set to TRUE, exclude
@@ -794,13 +792,12 @@ RASA-AUTH (AS1299 publishes, version 1):
 Result: AS1299:AS-TWELVE99 is EXCLUDED (not authorized in AS-EVIL)
         </sourcecode>
         <t>
-          Example 6: Peer Lock (directOnly propagation)
+          Example 6: Peer Lock Signal (BGP Import Policy)
         </t>
         <sourcecode type="text">
 RASA-SET (AS2914 publishes):
   asSetName: "AS2914:AS-GLOBAL"
-  members: [AS15169]
-  nestedSets: ["AS-UPSTREAM:AS-ALL"]  -- AS2914's upstream
+  members: [AS15169, AS64496]
 
 RASA-AUTH (AS15169 publishes, version 2):
   version: 2
@@ -808,15 +805,20 @@ RASA-AUTH (AS15169 publishes, version 2):
     authorizedAS: 15169
   authorizedIn:
     - asSetName: "AS2914:AS-GLOBAL"
-      propagation: directOnly    -- Peer lock!
+      propagation: directOnly    -- BGP import policy signal
   strictMode: TRUE
 
-Scenario 1: NTT's direct filters
-  Result: AS15169 is INCLUDED (direct customer)
+AS-SET Expansion (for prefix-list generation):
+  Result: AS15169 is INCLUDED normally in AS2914:AS-GLOBAL
+  Note: propagation field does NOT affect AS-SET membership
 
-Scenario 2: NTT's upstream includes AS2914:AS-GLOBAL
-  Result: AS15169 is EXCLUDED (peer lock prevents transit)
-  Action: Upstream cannot see Google via AS2914's AS-SET
+BGP Import Policy (how NTT may use the signal):
+  NTT MAY apply the following to routes with AS15169 in path:
+  - ACCEPT from direct BGP sessions with AS15169
+  - REJECT from route servers, transit, or other indirect paths
+  
+  This is an advisory signal. Implementation is at NTT's discretion.
+  The signal helps NTT prevent route leaks and ensure clean paths.
         </sourcecode>
     </section>
 
