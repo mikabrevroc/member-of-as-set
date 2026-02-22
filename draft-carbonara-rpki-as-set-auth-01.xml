@@ -257,6 +257,19 @@ RasaAuthFlags ::= BIT STRING {
 }
           </sourcecode>
           <sourcecode type="text">
+-- Propagation scope for peer locking
+PropagationScope ::= ENUMERATED {
+    unrestricted(0),    -- Can be nested anywhere (default)
+    directOnly(1)       -- Only direct inclusion, no nesting/transit
+}
+
+-- Authorized entry with propagation constraint
+AuthorizedEntry ::= SEQUENCE {
+    asSetName        UTF8String,
+    propagation      PropagationScope DEFAULT unrestricted
+}
+          </sourcecode>
+          <sourcecode type="text">
 RasaSetContent ::= SEQUENCE {
   version          [0] INTEGER DEFAULT 0,
   asSetName            UTF8String,
@@ -344,7 +357,7 @@ RasaAuthContent ::= SEQUENCE {
      authorizedAS        ASID,
      authorizedSet       UTF8String
   },
-  authorizedIn         SEQUENCE OF UTF8String,
+  authorizedIn         SEQUENCE OF AuthorizedEntry,
   flags                RasaAuthFlags OPTIONAL,
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime
@@ -357,8 +370,9 @@ RasaAuthContent ::= SEQUENCE {
             <dt>version:</dt>
             <dd>
               The version of the RASA-AUTH format. This document defines
-              version 0 (authorizedAS only) and version 1 (CHOICE support).
-              Version 1 MUST include the authorizedEntity field.
+              version 0 (authorizedAS only), version 1 (CHOICE support),
+              and version 2 (peer locking with AuthorizedEntry).
+              Version 2 MUST use AuthorizedEntry for authorizedIn.
             </dd>
             <dt>authorizedEntity:</dt>
             <dd>
@@ -377,9 +391,21 @@ RasaAuthContent ::= SEQUENCE {
             </dd>
             <dt>authorizedIn:</dt>
             <dd>
-              Each entry is a fully qualified AS-SET name (e.g.,
-              "AS1299:AS-TWELVE99"). An empty list means the ASN refuses
-              inclusion in any AS-SET.
+              Each entry is an AuthorizedEntry containing:
+              <ul spacing="normal">
+                <li>
+                  <strong>asSetName:</strong> Fully qualified AS-SET name (e.g.,
+                  "AS1299:AS-TWELVE99").
+                </li>
+                <li>
+                  <strong>propagation:</strong> PropagationScope controlling
+                  transitive inclusion. <em>unrestricted</em> (default) allows
+                  nesting in other AS-SETs. <em>directOnly</em> prevents the
+                  member from being transitively included via this AS-SET
+                  (peer lock).
+                </li>
+              </ul>
+              An empty list means the ASN refuses inclusion in any AS-SET.
             </dd>
             <dt>flags:</dt>
             <dd>
@@ -614,13 +640,22 @@ UnifiedRasaContent ::= SEQUENCE {
           </li>
           <li>
             For each nested AS-SET in the member list, first verify if
-            the nested AS-SET has published a RASA-AUTH (version 1 with
+            the nested AS-SET has published a RASA-AUTH (version 1+ with
             authorizedSet). If so, verify the current AS-SET name is in
             the authorizedIn list. If not authorized, skip the nested AS-SET
-            and log a warning. If authorized (or no RASA-AUTH exists), recurse
-            using the same algorithm. If the parent AS-SET has doNotInherit set,
-            include only the AS-SET reference (not its members) in the
-            expansion.
+            and log a warning. If authorized, check propagation:
+            <ul spacing="normal">
+              <li>
+                If propagation is "directOnly", skip the nested AS-SET
+                and log that peer lock prevented transitive inclusion.
+              </li>
+              <li>
+                If propagation is "unrestricted", recurse using the same
+                algorithm.
+              </li>
+            </ul>
+            If the parent AS-SET has doNotInherit set, include only the
+            AS-SET reference (not its members) in the expansion.
           </li>
           <li>
             For each member ASN, verify if a RASA object exists that lists
@@ -663,8 +698,20 @@ UnifiedRasaContent ::= SEQUENCE {
           </li>
           <li>
             If RASA-AUTH exists: verify this AS-SET name is in the
-            RASA-AUTH.authorizedIn list. If present, include the ASN.
-            If absent, exclude the ASN (member has not authorized).
+            RASA-AUTH.authorizedIn list. If present, check the propagation
+            scope:
+            <ul spacing="normal">
+              <li>
+                If propagation is "directOnly" and this is a nested
+                expansion (not direct inclusion), exclude the ASN and log
+                that peer lock was enforced.
+              </li>
+              <li>
+                If propagation is "unrestricted" or this is direct
+                inclusion, include the ASN.
+              </li>
+            </ul>
+            If the AS-SET is not in authorizedIn, exclude the ASN.
           </li>
           <li>
             If RASA-AUTH exists and strictMode is set to TRUE, exclude
@@ -695,7 +742,11 @@ RASA-AUTH (AS15169 publishes, version 0):
   version: 0
   authorizedEntity:
     authorizedAS: 15169
-  authorizedIn: ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99"]
+  authorizedIn:
+    - asSetName: "AS2914:AS-GLOBAL"
+      propagation: unrestricted
+    - asSetName: "AS1299:AS-TWELVE99"
+      propagation: unrestricted
   strictMode: FALSE
 
 Result: AS15169 is INCLUDED (authorized)
@@ -712,7 +763,9 @@ RASA-AUTH (AS15169 publishes, version 0):
   version: 0
   authorizedEntity:
     authorizedAS: 15169
-  authorizedIn: ["AS2914:AS-GLOBAL"]
+  authorizedIn:
+    - asSetName: "AS2914:AS-GLOBAL"
+      propagation: unrestricted
   strictMode: TRUE
 
 Result: AS15169 is EXCLUDED (not authorized), security event logged
@@ -741,7 +794,9 @@ RASA-AUTH (AS1299 publishes, version 1):
   version: 1
   authorizedEntity:
     authorizedSet: "AS1299:AS-TWELVE99"
-  authorizedIn: ["AS2914:AS-GLOBAL"]
+  authorizedIn:
+    - asSetName: "AS2914:AS-GLOBAL"
+      propagation: unrestricted
   strictMode: TRUE
 
 Result: AS1299:AS-TWELVE99 is INCLUDED (authorized)
@@ -755,7 +810,9 @@ RASA-AUTH (AS1299 publishes, version 1):
   version: 1
   authorizedEntity:
     authorizedSet: "AS1299:AS-TWELVE99"
-  authorizedIn: ["AS2914:AS-GLOBAL"]
+  authorizedIn:
+    - asSetName: "AS2914:AS-GLOBAL"
+      propagation: unrestricted
   strictMode: TRUE
 
 Result: AS1299:AS-TWELVE99 is EXCLUDED (not authorized in AS-EVIL)
