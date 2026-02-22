@@ -266,44 +266,50 @@ changed:          admin@sofia-uni.bg 20260222
 source:           RIPE
         </sourcecode>
         <t>
-          Example for Hurricane Electric (AS6939):
+          Example for Google (AS15169) restricting to specific transit providers:
         </t>
         <sourcecode type="text">
-member-of-as-set: AS6939
-member-of:        AS-HURRICANE
-mnt-by:           MAINT-AS6939
-admin-c:          HE-ADMIN
-tech-c:           HE-OPS
-changed:          ops@he.net 20260222
+member-of-as-set: AS15169
+member-of:        AS-GOOGLE-PEERING
+member-of:        AS2914:AS-GLOBAL
+member-of:        AS1299:AS-TWELVE99
+mnt-by:           MAINT-AS15169
+admin-c:          GOOG-ADMIN
+tech-c:           GOOG-NOC
+remarks:          Google authorizes inclusion only in specific Tier-1 AS-SETs
+remarks:          NOT in customer AS-SETs or regional peering
+changed:          peering@google.com 20260222
 source:           RADB
         </sourcecode>
         <t>
-          Example for AS-HURRICANE itself (authorizing inclusion in other AS-SETs):
+          Example for Google AS-SET (AS-GOOGLE) in transit provider AS-SETs:
         </t>
         <sourcecode type="text">
-member-of-as-set: AS-HURRICANE
-member-of:        AS-GLOBAL-TRANSIT
-mnt-by:           MAINT-AS6939
-admin-c:          HE-ADMIN
-tech-c:           HE-OPS
-remarks:          Hurricane Electric authorizes inclusion in global transit AS-SET
-remarks:          NOT in customer or regional AS-SETs
-changed:          ops@he.net 20260222
+member-of-as-set: AS-GOOGLE
+member-of:        AS-GOOGLE-PEERING
+member-of:        AS2914:AS-GLOBAL
+member-of:        AS6461:AS-MFNX
+mnt-by:           MAINT-AS15169
+admin-c:          GOOG-ADMIN
+tech-c:           GOOG-NOC
+remarks:          Google AS-SET only authorized in Tier-1 provider AS-SETs
+changed:          peering@google.com 20260222
 source:           RADB
         </sourcecode>
         <t>
-          Example with multiple ASNs (enterprise with multiple AS numbers):
+          Example with multiple ASNs (enterprise authorizing across providers):
         </t>
         <sourcecode type="text">
 member-of-as-set: AS64501
 member-of-as-set: AS64502
 member-of-as-set: AS64503
-member-of:        AS-ENTERPRISE-TRANSIT
-member-of:        AS-GLOBAL-PEERING
+member-of:        AS-NTT-TRANSIT
+member-of:        AS-Arelion-TRANSIT
+member-of:        AS-ZAYO-TRANSIT
 mnt-by:           MNTR-ENTERPRISE
 admin-c:          ENT1-RIPE
 tech-c:           ENT2-RIPE
-remarks:          Enterprise authorizes all ASNs in transit and peering AS-SETs
+remarks:          Enterprise ASNs authorized in specific Tier-1 transit AS-SETs
 changed:          admin@enterprise.com 20260222
 source:           RIPE
         </sourcecode>

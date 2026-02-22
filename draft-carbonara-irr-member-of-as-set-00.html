@@ -1656,46 +1656,52 @@ source:           RIPE
 </pre><a href="#section-4.4-2" class="pilcrow">¶</a>
 </div>
 <p id="section-4.4-3">
-          Example for Hurricane Electric (AS6939):<a href="#section-4.4-3" class="pilcrow">¶</a></p>
+          Example for Google (AS15169) restricting to specific transit providers:<a href="#section-4.4-3" class="pilcrow">¶</a></p>
 <div class="lang-text sourcecode" id="section-4.4-4">
 <pre>
-member-of-as-set: AS6939
-member-of:        AS-HURRICANE
-mnt-by:           MAINT-AS6939
-admin-c:          HE-ADMIN
-tech-c:           HE-OPS
-changed:          ops@he.net 20260222
+member-of-as-set: AS15169
+member-of:        AS-GOOGLE-PEERING
+member-of:        AS2914:AS-GLOBAL
+member-of:        AS1299:AS-TWELVE99
+mnt-by:           MAINT-AS15169
+admin-c:          GOOG-ADMIN
+tech-c:           GOOG-NOC
+remarks:          Google authorizes inclusion only in specific Tier-1 AS-SETs
+remarks:          NOT in customer AS-SETs or regional peering
+changed:          peering@google.com 20260222
 source:           RADB
 </pre><a href="#section-4.4-4" class="pilcrow">¶</a>
 </div>
 <p id="section-4.4-5">
-          Example for AS-HURRICANE itself (authorizing inclusion in other AS-SETs):<a href="#section-4.4-5" class="pilcrow">¶</a></p>
+          Example for Google AS-SET (AS-GOOGLE) in transit provider AS-SETs:<a href="#section-4.4-5" class="pilcrow">¶</a></p>
 <div class="lang-text sourcecode" id="section-4.4-6">
 <pre>
-member-of-as-set: AS-HURRICANE
-member-of:        AS-GLOBAL-TRANSIT
-mnt-by:           MAINT-AS6939
-admin-c:          HE-ADMIN
-tech-c:           HE-OPS
-remarks:          Hurricane Electric authorizes inclusion in global transit AS-SET
-remarks:          NOT in customer or regional AS-SETs
-changed:          ops@he.net 20260222
+member-of-as-set: AS-GOOGLE
+member-of:        AS-GOOGLE-PEERING
+member-of:        AS2914:AS-GLOBAL
+member-of:        AS6461:AS-MFNX
+mnt-by:           MAINT-AS15169
+admin-c:          GOOG-ADMIN
+tech-c:           GOOG-NOC
+remarks:          Google AS-SET only authorized in Tier-1 provider AS-SETs
+changed:          peering@google.com 20260222
 source:           RADB
 </pre><a href="#section-4.4-6" class="pilcrow">¶</a>
 </div>
 <p id="section-4.4-7">
-          Example with multiple ASNs (enterprise with multiple AS numbers):<a href="#section-4.4-7" class="pilcrow">¶</a></p>
+          Example with multiple ASNs (enterprise authorizing across providers):<a href="#section-4.4-7" class="pilcrow">¶</a></p>
 <div class="lang-text sourcecode" id="section-4.4-8">
 <pre>
 member-of-as-set: AS64501
 member-of-as-set: AS64502
 member-of-as-set: AS64503
-member-of:        AS-ENTERPRISE-TRANSIT
-member-of:        AS-GLOBAL-PEERING
+member-of:        AS-NTT-TRANSIT
+member-of:        AS-Arelion-TRANSIT
+member-of:        AS-ZAYO-TRANSIT
 mnt-by:           MNTR-ENTERPRISE
 admin-c:          ENT1-RIPE
 tech-c:           ENT2-RIPE
-remarks:          Enterprise authorizes all ASNs in transit and peering AS-SETs
+remarks:          Enterprise ASNs authorized in specific Tier-1 transit AS-SETs
 changed:          admin@enterprise.com 20260222
 source:           RIPE
 </pre><a href="#section-4.4-8" class="pilcrow">¶</a>
