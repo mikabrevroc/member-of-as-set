@@ -1,0 +1,29 @@
+# Simulated AS-SET database for POC
+# These represent what would be in the actual IRR
+
+# AS-SET: AS-NTT-CUSTOMERS
+# Description: NTT customer AS-SET
+# Maintainer: MNT-NTT-CUSTOMER
+descr: NTT customer AS-SET
+members: AS64496
+members: AS64497
+members: AS64498
+members: AS64499
+mnt-by: MNT-NTT-CUSTOMER
+source: NTTCOM
+
+# AS-SET: AS-MALICIOUS-CUSTOMER
+# Description: A malicious customer trying to hijack
+# This customer has legit AS64496 but adds unauthorized ASNs
+members: AS64496
+members: AS64497
+members: AS64498
+members: AS64499
+# ATTACK 1: Add Google to steal their traffic
+members: AS15169
+# ATTACK 2: Add Level3 to appear as tier-1
+members: AS3356
+# ATTACK 3: Add Microsoft
+members: AS8075
+mnt-by: MNT-MALICIOUS
+source: NTTCOM

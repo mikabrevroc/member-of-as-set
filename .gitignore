@@ -1,0 +1,19 @@
+# Raw data that can be recreated
+networker-260222.log
+*.log
+
+# Generated output files (can be regenerated with xml2rfc)
+*.txt
+*.html
+
+# Temporary files
+*.tmp
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Dependencies (if any)
+node_modules/
+__pycache__/

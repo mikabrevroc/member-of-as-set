@@ -1,0 +1,29 @@
+# Simulated member-of-as-set database
+# Format: ASN|AS-SET1,AS-SET2,...
+
+# Legitimate NTT customers that have authorized being in AS-NTT-CUSTOMERS
+64496|AS-NTT-CUSTOMERS
+64497|AS-NTT-CUSTOMERS
+64498|AS-NTT-CUSTOMERS
+64499|AS-NTT-CUSTOMERS
+
+# Google has NOT authorized being in AS-NTT-CUSTOMERS (empty or different AS-SETs)
+15169|AS-GOOGLE,AS-GOOGLE-PEERING
+
+# Level3 has NOT authorized being in AS-NTT-CUSTOMERS
+3356|AS-LEVEL3-TRANSIT,AS-LEVEL3-PEERING
+
+# Microsoft has NOT authorized being in AS-NTT-CUSTOMERS
+8075|AS-MICROSOFT
+
+# AWS has NOT authorized being in AS-NTT-CUSTOMERS  
+16509|AS-AMAZON,AS-AWS
+
+# Arelion (AS1299) - Tier-1, NOT in AS-NTT-CUSTOMERS
+1299|AS-ARELION-TRANSIT
+
+# Zayo (AS6461) - Tier-1, NOT in AS-NTT-CUSTOMERS
+6461|AS-ZAYO
+
+# NTT itself (AS2914)
+2914|AS-NTT-TRANSIT,AS-NTT-PEERING,AS2914:AS-GLOBAL

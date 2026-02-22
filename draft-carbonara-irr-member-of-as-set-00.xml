@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rfc version="3"
+     category="std"
+     docName="draft-carbonara-irr-member-of-as-set-00"
+     ipr="trust200902"
+     submissionType="IETF"
+     consensus="true"
+     tocInclude="true"
+     tocDepth="3"
+     xml:lang="en">
+
+  <front>
+    <title abbrev="Member-of-AS-SET">
+      Membership Verification for Autonomous System Sets (AS-SETs)
+    </title>
+
+    <seriesInfo name="Internet-Draft" value="draft-carbonara-irr-member-of-as-set-00"/>
+
+    <author fullname="Saku Carbonara" initials="S." surname="Carbonara">
+      <organization>NTT Communications Corporation</organization>
+      <address>
+        <email>saku@carbonara.cy</email>
+      </address>
+    </author>
+
+    <date year="2026" month="February" day="22"/>
+
+    <area>RTG</area>
+    <workgroup>Global Routing Operations</workgroup>
+    <keyword>IRR</keyword>
+    <keyword>BGP</keyword>
+    <keyword>AS-SET</keyword>
+    <keyword>RPKI</keyword>
+
+    <abstract>
+      <t>
+        This document defines a new object type, member-of-as-set, for use in
+        Internet Routing Registry (IRR) databases. The member-of-as-set object
+        enables autonomous systems to declare membership in AS-SET objects,
+        creating bidirectional verification of AS-SET expansions.
+      </t>
+      <t>
+        The member-of-as-set object provides a lightweight, backward-compatible
+        mechanism that allows network operators to verify that an autonomous
+        system listed in an AS-SET has authorized such inclusion. When used in
+        conjunction with existing tools such as bgpq4, this verification enables
+        automated pruning of unauthorized autonomous systems from AS-SET
+        expansions.
+      </t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section anchor="introduction">
+      <name>Introduction</name>
+      <t>
+        Internet Routing Registry (IRR) databases <xref target="RFC2622"/>
+        have long been used by network operators to generate BGP route filters.
+        The Routing Policy Specification Language (RPSL) defines the as-set
+        object, which represents a set of autonomous systems.
+      </t>
+      <t>
+        A fundamental limitation of current AS-SET objects is their
+        unidirectional nature. An AS-SET owner can include any autonomous
+        system without requiring authorization. This creates a security
+        vulnerability where malicious operators can include high-value
+        autonomous systems in their AS-SET.
+      </t>
+      <t>
+        While RPKI <xref target="RFC6480"/> provides origin validation,
+        it does not prevent route leaks. Similarly, ASPA
+        <xref target="RFC9595"/> provides AS path validation but has
+        seen limited deployment.
+      </t>
+      <t>
+        This document defines the member-of-as-set object to enable
+        bidirectional verification with the following goals:
+        authorization of AS-SET membership, verification during expansion,
+        backward compatibility, incremental deployment, and complementarity
+        with existing mechanisms.
+      </t>
+    </section>
+
+    <section anchor="terminology">
+      <name>Terminology</name>
+      <t>
+        The key words <bcp14>MUST</bcp14>, <bcp14>MUST NOT</bcp14>,
+        <bcp14>REQUIRED</bcp14>, <bcp14>SHALL</bcp14>, <bcp14>SHALL NOT</bcp14>,
+        <bcp14>SHOULD</bcp14>, <bcp14>SHOULD NOT</bcp14>,
+        <bcp14>RECOMMENDED</bcp14>, <bcp14>MAY</bcp14>, and
+        <bcp14>OPTIONAL</bcp14> in this document are to be interpreted as
+        described in BCP 14 <xref target="RFC2119"/> <xref target="RFC8174"/>.
+      </t>
+      <dl spacing="normal">
+        <dt>AS-SET:</dt>
+        <dd>An RPSL object representing a set of ASNs, per <xref target="RFC2622"/>.</dd>
+        <dt>Member-of-AS-SET:</dt>
+        <dd>An RPSL object allowing an AS to declare AS-SET membership.</dd>
+        <dt>AS-SET Expansion:</dt>
+        <dd>Recursively resolving an AS-SET to obtain all ASNs.</dd>
+        <dt>Root AS-SET:</dt>
+        <dd>The AS-SET from which an expansion begins.</dd>
+      </dl>
+    </section>
+
+    <section anchor="object">
+      <name>The member-of-as-set Object</name>
+      <t>
+        The member-of-as-set object is an RPSL object that allows an
+        autonomous system to declare membership in AS-SETs. This serves
+        as authorization for inclusion.
+      </t>
+      <sourcecode type="text">
+member-of-as-set:   [mandatory]  [single]     [primary/lookup key]
+admin-c:            [mandatory]  [multiple]   [inverse key]
+tech-c:             [mandatory]  [multiple]   [inverse key]
+mnt-by:             [mandatory]  [multiple]   [inverse key]
+source:             [mandatory]  [single]     []
+      </sourcecode>
+      <section anchor="object-attr">
+        <name>Attribute Definitions</name>
+        <t>
+          The member-of-as-set attribute specifies AS-SET objects in which
+          the autonomous system declares membership:
+        </t>
+        <sourcecode type="text">
+member-of-as-set: AS-SET-1 [ AS-SET-2 ... AS-SET-n ]
+        </sourcecode>
+        <t>
+          The attribute <bcp14>MUST</bcp14> contain at least one AS-SET name.
+          AS-SET names <bcp14>MUST</bcp14> be unique within the attribute.
+        </t>
+        <t>
+          The mnt-by attribute references maintainers authorized to modify
+          this object. Changes <bcp14>MUST</bcp14> be authenticated.
+        </t>
+      </section>
+      <section anchor="semantics">
+        <name>Object Semantics</name>
+        <t>
+          By including an AS-SET name, an autonomous system authorizes its
+          inclusion in expansions of that AS-SET. If a member-of-as-set
+          object exists, it <bcp14>SHOULD</bcp14> contain a complete list
+          of authorized AS-SETs.
+        </t>
+      </section>
+    </section>
+
+    <section anchor="verification">
+      <name>Verification Mechanism</name>
+      <t>
+        Given an AS-SET S to be expanded, the verification algorithm is:
+      </t>
+      <ol spacing="normal">
+        <li>Recursively expand AS-SET S to obtain all autonomous systems.</li>
+        <li>For each autonomous system:</li>
+      </ol>
+      <t>
+        Query the IRR for a member-of-as-set object. If none exists,
+        include the system (backward compatibility). If a member-of-as-set
+        object exists, check if the root AS-SET appears in the attribute.
+        Include if yes, prune if no.
+      </t>
+      <t>
+        Finally, return the filtered set.
+      </t>
+      <section anchor="tools">
+        <name>Implementation in Tools</name>
+        <t>
+          Tools that expand AS-SETs <bcp14>SHOULD</bcp14> support
+          verification. They <bcp14>SHOULD</bcp14> query IRR databases,
+          provide enable/disable options, default to disabled, log pruned
+          systems, and cache objects for performance.
+        </t>
+      </section>
+    </section>
+
+    <section anchor="deployment">
+      <name>Deployment Considerations</name>
+      <t>
+        The mechanism is backward compatible: non-participating autonomous
+        systems are included as today; non-supporting tools work without
+        modification; IRR software requires no changes.
+      </t>
+      <t>
+        Deployment proceeds incrementally: tools add support, large
+        autonomous systems create objects, providers enable verification.
+      </t>
+      <t>
+        Member-of-as-set complements RPKI and ASPA. It does not replace
+        RPKI origin validation but adds AS path validation during
+        AS-SET expansion.
+      </t>
+    </section>
+
+    <section anchor="security">
+      <name>Security Considerations</name>
+      <t>
+        The mechanism addresses unauthorized AS-SET inclusion, accidental
+        misconfiguration, and BGP optimizer leaks.
+      </t>
+      <t>
+        Incomplete lists risk filtering legitimate routes. Attackers with
+        compromised credentials can create false objects. Verification
+        occurs during filter generation, not BGP operation.
+      </t>
+      <t>
+        Networks <bcp14>SHOULD</bcp14> use strong authentication
+        <xref target="RFC2726"/>, monitor expansions, and automate
+        object updates.
+      </t>
+    </section>
+
+    <section anchor="iana">
+      <name>IANA Considerations</name>
+      <t>
+        IANA is requested to register the member-of-as-set object type
+        and attribute in the RPSL Object Types and Attributes registries.
+      </t>
+    </section>
+  </middle>
+
+  <back>
+    <references>
+      <name>References</name>
+      <references>
+        <name>Normative References</name>
+        <reference anchor="RFC2119" target="https://www.rfc-editor.org/info/rfc2119">
+          <front>
+            <title>Key words for use in RFCs to Indicate Requirement Levels</title>
+            <author fullname="S. Bradner" initials="S." surname="Bradner"/>
+            <date year="1997"/>
+          </front>
+          <seriesInfo name="BCP" value="14"/>
+          <seriesInfo name="RFC" value="2119"/>
+        </reference>
+        <reference anchor="RFC2622" target="https://www.rfc-editor.org/info/rfc2622">
+          <front>
+            <title>Routing Policy Specification Language (RPSL)</title>
+            <author fullname="C. Alaettinoglu" initials="C." surname="Alaettinoglu"/>
+            <author fullname="C. Villamizar" initials="C." surname="Villamizar"/>
+            <author fullname="E. Gerich" initials="E." surname="Gerich"/>
+            <date year="1999"/>
+          </front>
+          <seriesInfo name="RFC" value="2622"/>
+        </reference>
+        <reference anchor="RFC2726" target="https://www.rfc-editor.org/info/rfc2726">
+          <front>
+            <title>PGP Authentication for RIPE Database Updates</title>
+            <author fullname="L. Blunk" initials="L." surname="Blunk"/>
+            <date year="1999"/>
+          </front>
+          <seriesInfo name="RFC" value="2726"/>
+        </reference>
+        <reference anchor="RFC8174" target="https://www.rfc-editor.org/info/rfc8174">
+          <front>
+            <title>Ambiguity of Key Words</title>
+            <author fullname="B. Leiba" initials="B." surname="Leiba"/>
+            <date year="2017"/>
+          </front>
+          <seriesInfo name="BCP" value="14"/>
+          <seriesInfo name="RFC" value="8174"/>
+        </reference>
+      </references>
+      <references>
+        <name>Informative References</name>
+        <reference anchor="RFC6480" target="https://www.rfc-editor.org/info/rfc6480">
+          <front>
+            <title>RPKI Infrastructure</title>
+            <author fullname="M. Lepinski" initials="M." surname="Lepinski"/>
+            <date year="2012"/>
+          </front>
+          <seriesInfo name="RFC" value="6480"/>
+        </reference>
+        <reference anchor="RFC9595" target="https://www.rfc-editor.org/info/rfc9595">
+          <front>
+            <title>BGP ASPA</title>
+            <author fullname="K. Weber" initials="K." surname="Weber"/>
+            <date year="2024"/>
+          </front>
+          <seriesInfo name="RFC" value="9595"/>
+        </reference>
+      </references>
+    </references>
+    <section anchor="acknowledgments" numbered="false">
+      <name>Acknowledgments</name>
+      <t>
+        Thanks to the #networker IRC community for discussions leading
+        to this proposal.
+      </t>
+    </section>
+  </back>
+</rfc>
