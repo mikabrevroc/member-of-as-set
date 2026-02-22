@@ -218,7 +218,7 @@
         </li>
         <li>
           <strong>RASA-AUTH:</strong> Defines which AS-SETs may include an
-          ASN (published by ASN owner). Replaces the IRR member-of-as-set
+          ASN or AS-SET (published by ASN or AS-SET owner). Replaces the IRR member-of-as-set
           functionality.
         </li>
       </ol>
