@@ -224,8 +224,8 @@
       </ol>
       <t>
         These objects are intentionally separate to maintain clear separation
-        of concerns and allow independent deployment. See <xref target="design-considerations"/>
-        for discussion of alternative unified approaches.
+        of concerns and allow independent deployment. The two-object design is
+        discussed further in Section 4.3.
       </t>
 
       <section anchor="rasa-set-object">
@@ -245,6 +245,11 @@ id-rpki-rasa-set OBJECT IDENTIFIER ::= { id-rpki 42 1 }
           </sourcecode>
           <t>
             The RASA-SET content has the following ASN.1 structure:
+          </t>
+          <t>
+            Note: ASID is defined as INTEGER (0..4294967295) per RFC 3779.
+            The OID arc id-rpki will be assigned by IANA during the
+            publication process.
           </t>
           <sourcecode type="text">
 RasaFlags ::= BIT STRING {
@@ -1250,7 +1255,7 @@ Result: Mixed RASA/IRR expansion during transition period.
       </section>
     </section>
     <section anchor="irr-operator-considerations" toc="default">
-      <name>IRR Operator Considerations (To Be Investigated)</name>
+      <name>IRR Operator Considerations</name>
       <t>
         The introduction of RASA objects raises several open questions
         regarding the relationship between RPKI-authenticated AS-SET data
@@ -1521,7 +1526,7 @@ Media Type: application/rpki-rasa-auth
         </reference>
         <reference anchor="RFC8174" target="https://www.rfc-editor.org/info/rfc8174">
           <front>
-            <title>Ambiguity of Key Words</title>
+            <title>Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words</title>
             <author fullname="B. Leiba" initials="B." surname="Leiba"/>
             <date year="2017"/>
           </front>

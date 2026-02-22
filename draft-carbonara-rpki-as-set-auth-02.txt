@@ -76,7 +76,7 @@ Table of Contents
      4.1.  RASA-SET Object . . . . . . . . . . . . . . . . . . . . .   6
        4.1.1.  Object Format . . . . . . . . . . . . . . . . . . . .   6
        4.1.2.  Field Definitions . . . . . . . . . . . . . . . . . .   7
-     4.2.  RASA-AUTH Object  . . . . . . . . . . . . . . . . . . . .   7
+     4.2.  RASA-AUTH Object  . . . . . . . . . . . . . . . . . . . .   8
        4.2.1.  Object Format . . . . . . . . . . . . . . . . . . . .   8
        4.2.2.  Field Definitions . . . . . . . . . . . . . . . . . .   8
      4.3.  Design Overview . . . . . . . . . . . . . . . . . . . . .   9
@@ -84,28 +84,28 @@ Table of Contents
      5.1.  Signature Validation  . . . . . . . . . . . . . . . . . .   9
      5.2.  Content Validation  . . . . . . . . . . . . . . . . . . .   9
      5.3.  AS-SET Expansion with RASA  . . . . . . . . . . . . . . .  10
-   6.  Conflict Resolution . . . . . . . . . . . . . . . . . . . . .  10
+   6.  Conflict Resolution . . . . . . . . . . . . . . . . . . . . .  11
      6.1.  Priority Rules  . . . . . . . . . . . . . . . . . . . . .  11
      6.2.  Conflict Examples . . . . . . . . . . . . . . . . . . . .  11
-   7.  Circular Reference Detection  . . . . . . . . . . . . . . . .  13
+   7.  Circular Reference Detection  . . . . . . . . . . . . . . . .  14
      7.1.  Detection Algorithm . . . . . . . . . . . . . . . . . . .  14
-     7.2.  Circular Reference Example  . . . . . . . . . . . . . . .  14
-   8.  Use Cases . . . . . . . . . . . . . . . . . . . . . . . . . .  14
-     8.1.  Content Provider Protection . . . . . . . . . . . . . . .  14
+     7.2.  Circular Reference Example  . . . . . . . . . . . . . . .  15
+   8.  Use Cases . . . . . . . . . . . . . . . . . . . . . . . . . .  15
+     8.1.  Content Provider Protection . . . . . . . . . . . . . . .  15
      8.2.  Tier-1 Provider Protection  . . . . . . . . . . . . . . .  15
-     8.3.  Enterprise Multi-ASN  . . . . . . . . . . . . . . . . . .  15
-     8.4.  IRR Namespace Binding . . . . . . . . . . . . . . . . . .  15
+     8.3.  Enterprise Multi-ASN  . . . . . . . . . . . . . . . . . .  16
+     8.4.  IRR Namespace Binding . . . . . . . . . . . . . . . . . .  16
    9.  Security Considerations . . . . . . . . . . . . . . . . . . .  16
      9.1.  Partial Deployment  . . . . . . . . . . . . . . . . . . .  16
-     9.2.  Chain Attack Mitigation . . . . . . . . . . . . . . . . .  16
-     9.3.  Chain-of-Trust Limitations  . . . . . . . . . . . . . . .  16
+     9.2.  Chain Attack Mitigation . . . . . . . . . . . . . . . . .  17
+     9.3.  Chain-of-Trust Limitations  . . . . . . . . . . . . . . .  17
    10. Deployment Considerations . . . . . . . . . . . . . . . . . .  17
-     10.1.  ASPA-RASA Relationship . . . . . . . . . . . . . . . . .  17
-   11. Operational Guidance  . . . . . . . . . . . . . . . . . . . .  17
-     11.1.  Publishing RASA Objects  . . . . . . . . . . . . . . . .  17
-     11.2.  Consuming RASA Objects . . . . . . . . . . . . . . . . .  18
-     11.3.  Monitoring and Alerting  . . . . . . . . . . . . . . . .  18
-     11.4.  Detailed Operational Examples  . . . . . . . . . . . . .  18
+     10.1.  ASPA-RASA Relationship . . . . . . . . . . . . . . . . .  18
+   11. Operational Guidance  . . . . . . . . . . . . . . . . . . . .  18
+     11.1.  Publishing RASA Objects  . . . . . . . . . . . . . . . .  18
+     11.2.  Consuming RASA Objects . . . . . . . . . . . . . . . . .  19
+     11.3.  Monitoring and Alerting  . . . . . . . . . . . . . . . .  19
+     11.4.  Detailed Operational Examples  . . . . . . . . . . . . .  19
 
 
 
@@ -115,27 +115,27 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
        11.4.1.  Example 1: Tier-1 Provider Customer AS-SET . . . . .  19
-       11.4.2.  Example 2: Content Provider Multi-AS Protection  . .  19
-       11.4.3.  Example 3: Complete Validator Decision Flow  . . . .  20
-       11.4.4.  Example 6: Partial Deployment Scenario . . . . . . .  21
-   12. Relationship to ASGroup . . . . . . . . . . . . . . . . . . .  22
-     12.1.  ASGroup Innovations  . . . . . . . . . . . . . . . . . .  22
-     12.2.  RASA Simplifications . . . . . . . . . . . . . . . . . .  23
-     12.3.  Acknowledgments  . . . . . . . . . . . . . . . . . . . .  23
-   13. IRR Operator Considerations (To Be Investigated)  . . . . . .  23
-     13.1.  IRR Object Deletion vs Retention . . . . . . . . . . . .  23
-     13.2.  IRR-RASA Synchronization . . . . . . . . . . . . . . . .  24
-     13.3.  Transition Period Management . . . . . . . . . . . . . .  24
-   14. Failure Modes . . . . . . . . . . . . . . . . . . . . . . . .  25
-     14.1.  Signature Validation Failures  . . . . . . . . . . . . .  25
-     14.2.  Repository Availability Failures . . . . . . . . . . . .  25
-     14.3.  Policy Violation Failures  . . . . . . . . . . . . . . .  25
-     14.4.  Chain Protection Failures  . . . . . . . . . . . . . . .  26
-   15. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  26
-   16. References  . . . . . . . . . . . . . . . . . . . . . . . . .  26
-     16.1.  Normative References . . . . . . . . . . . . . . . . . .  26
-     16.2.  Informative References . . . . . . . . . . . . . . . . .  27
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  27
+       11.4.2.  Example 2: Content Provider Multi-AS Protection  . .  20
+       11.4.3.  Example 3: Complete Validator Decision Flow  . . . .  21
+       11.4.4.  Example 6: Partial Deployment Scenario . . . . . . .  22
+   12. Relationship to ASGroup . . . . . . . . . . . . . . . . . . .  23
+     12.1.  ASGroup Innovations  . . . . . . . . . . . . . . . . . .  23
+     12.2.  RASA Simplifications . . . . . . . . . . . . . . . . . .  24
+     12.3.  Acknowledgments  . . . . . . . . . . . . . . . . . . . .  24
+   13. IRR Operator Considerations . . . . . . . . . . . . . . . . .  24
+     13.1.  IRR Object Deletion vs Retention . . . . . . . . . . . .  24
+     13.2.  IRR-RASA Synchronization . . . . . . . . . . . . . . . .  25
+     13.3.  Transition Period Management . . . . . . . . . . . . . .  25
+   14. Failure Modes . . . . . . . . . . . . . . . . . . . . . . . .  26
+     14.1.  Signature Validation Failures  . . . . . . . . . . . . .  26
+     14.2.  Repository Availability Failures . . . . . . . . . . . .  26
+     14.3.  Policy Violation Failures  . . . . . . . . . . . . . . .  26
+     14.4.  Chain Protection Failures  . . . . . . . . . . . . . . .  27
+   15. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  27
+   16. References  . . . . . . . . . . . . . . . . . . . . . . . . .  27
+     16.1.  Normative References . . . . . . . . . . . . . . . . . .  27
+     16.2.  Informative References . . . . . . . . . . . . . . . . .  28
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  28
 
 1.  Introduction
 
@@ -289,8 +289,8 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
        by ASN owner).  Replaces the IRR member-of-as-set functionality.
 
    These objects are intentionally separate to maintain clear separation
-   of concerns and allow independent deployment.  See Section 4.3 for
-   discussion of alternative unified approaches.
+   of concerns and allow independent deployment.  The two-object design
+   is discussed further in Section 4.3.
 
 4.1.  RASA-SET Object
 
@@ -306,6 +306,10 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    The RASA-SET content has the following ASN.1 structure:
 
+   Note: ASID is defined as INTEGER (0..4294967295) per RFC 3779.  The
+   OID arc id-rpki will be assigned by IANA during the publication
+   process.
+
    RasaFlags ::= BIT STRING {
        doNotInherit(0),
        authoritative(1)
@@ -314,6 +318,25 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    RasaAuthFlags ::= BIT STRING {
        strictMode(0)
    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                 [Page 6]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
 
    -- Propagation scope for peer locking
    PropagationScope ::= ENUMERATED {
@@ -327,16 +350,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
        propagation      PropagationScope OPTIONAL
        -- If propagation is absent, defaults to unrestricted
    }
-
-
-
-
-
-
-Abrahamsson              Expires 27 August 2026                 [Page 6]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
 
    RasaSetContent ::= SEQUENCE {
      version          [0] INTEGER DEFAULT 0,
@@ -373,6 +386,14 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
       (e.g., "RADB", "RIPE").  Prevents namespace ambiguity.
 
    flags:  Optional flags: doNotInherit (prevent transitive inclusion),
+
+
+
+Abrahamsson              Expires 27 August 2026                 [Page 7]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
       authoritative (RASA-SET replaces IRR data).
 
    notBefore, notAfter:  Validity period per RPKI policies.
@@ -383,16 +404,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    autonomous system or AS-SET owner, granting permission for inclusion
    in specified parent AS-SETs.  It is published by the ASN or AS-SET
    owner to control inclusion authorization.
-
-
-
-
-
-
-Abrahamsson              Expires 27 August 2026                 [Page 7]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
 
 4.2.1.  Object Format
 
@@ -431,6 +442,14 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
       *  *authorizedSet:* The AS-SET name that is authorizing inclusion.
          Use for AS-SETs that may be included in other AS-SETs.
 
+
+
+
+Abrahamsson              Expires 27 August 2026                 [Page 8]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
    authorizedIn:  Each entry is an AuthorizedEntry containing asSetName
       (the AS-SET name) and optionally propagation (PropagationScope).
       If propagation is absent, it defaults to unrestricted.  The
@@ -441,15 +460,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
       ASN refuses inclusion in any AS-SET.
 
    flags:  Optional flags controlling authorization behavior.
-
-
-
-
-Abrahamsson              Expires 27 August 2026                 [Page 8]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
-
       strictMode: If set, AS-SETs NOT in this list MUST NOT include this
       ASN (reject rather than warn).
 
@@ -487,6 +497,15 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    In addition to signature validation, the RASA content MUST be
    validated for conformance to this specification:
 
+
+
+
+
+Abrahamsson              Expires 27 August 2026                 [Page 9]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
    1.  The asSetName MUST start with "AS-" (case-insensitive).  RASA
        objects with asSetName not conforming to RFC2622 naming
        conventions MUST be rejected.  This prevents namespace collisions
@@ -497,14 +516,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    3.  The members list MUST contain only valid ASNs (no AS-SET names in
        the members list; nested AS-SETs are handled via expansion).
-
-
-
-
-Abrahamsson              Expires 27 August 2026                 [Page 9]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
 
    4.  All ASIDs in the members list MUST be sorted in ascending order
        with no duplicates.
@@ -544,6 +555,13 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
        strictMode flag controls logging: if TRUE, log a security event;
        if FALSE, log a warning.
 
+
+
+Abrahamsson              Expires 27 August 2026                [Page 10]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
    The irrSource field prevents namespace ambiguity attacks where the
    same AS-SET name exists in multiple IRR databases with different
    members.  When specified, tools MUST NOT query other IRR databases.
@@ -553,14 +571,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    When both RASA-SET and RASA-AUTH objects exist for the same AS-SET
    membership claim, validators MUST apply the following resolution
    rules to determine the authoritative membership list.
-
-
-
-
-Abrahamsson              Expires 27 August 2026                [Page 10]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
 
 6.1.  Priority Rules
 
@@ -593,6 +603,21 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    Example 1: Member authorizes inclusion
 
+
+
+
+
+
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 11]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
    RASA-SET (AS2914 publishes):
      asSetName: "AS2914:AS-GLOBAL"
      members: [AS64496, AS64497, AS15169]
@@ -610,13 +635,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    Result: AS15169 is INCLUDED (authorized)
 
    Example 2: Member does not authorize inclusion
-
-
-
-Abrahamsson              Expires 27 August 2026                [Page 11]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
 
    RASA-SET (AS-EVIL publishes):
      asSetName: "AS-EVIL:CUSTOMERS"
@@ -644,6 +662,18 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    Example 4: AS-SET authorization
 
+
+
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 12]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
    RASA-SET (AS2914 publishes):
      asSetName: "AS2914:AS-GLOBAL"
      nestedSets: ["AS1299:AS-TWELVE99"]
@@ -660,20 +690,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    Example 5: AS-SET authorization denied
 
-
-
-
-
-
-
-
-
-
-Abrahamsson              Expires 27 August 2026                [Page 12]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
-
    RASA-SET (AS-EVIL publishes):
      asSetName: "AS-EVIL:CUSTOMERS"
      nestedSets: ["AS1299:AS-TWELVE99"]
@@ -689,6 +705,30 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    Result: AS1299:AS-TWELVE99 is EXCLUDED (not authorized in AS-EVIL)
 
    Example 6: Peer Lock Signal (BGP Import Policy)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 13]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
 
    RASA-SET (AS2914 publishes):
      asSetName: "AS2914:AS-GLOBAL"
@@ -723,13 +763,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    Validators MUST detect and handle circular references to prevent
    infinite loops during AS-SET expansion.
 
-
-
-Abrahamsson              Expires 27 August 2026                [Page 13]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
-
 7.1.  Detection Algorithm
 
    During AS-SET expansion, validators MUST maintain a "seen" set
@@ -744,6 +777,14 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    3.  If yes: circular reference detected.  Stop expanding this branch
        and log a warning.  Do not include any members from the circular
        AS-SET.
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 14]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
 
    4.  If no: add the AS-SET name to 'seen' and continue expansion.
 
@@ -778,14 +819,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    Google (AS15169) wants to ensure it is only included in specific
    Tier-1 provider AS-SETs:
 
-
-
-
-Abrahamsson              Expires 27 August 2026                [Page 14]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
-
    RASA Object (signed by AS15169):
      asSetName:     "AS15169:AS-GOOGLE"
      containingAS:  15169
@@ -799,6 +832,15 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 8.2.  Tier-1 Provider Protection
 
    Arelion (AS1299) wants to protect its customer AS-SET:
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 15]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
 
    RASA Object (signed by AS1299):
      asSetName:     "AS1299:AS-TWELVE99"
@@ -834,14 +876,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
      flags:         authoritative(1) = TRUE,
                     doNotInherit(0) = TRUE
 
-
-
-
-Abrahamsson              Expires 27 August 2026                [Page 15]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
-
    The irrSource field locks AS6939:AS-HURRICANE to the RADB database
    only.  Tools will NOT query RIPE, ARIN, or other databases for this
    AS-SET.  This prevents attackers from registering AS6939:AS-HURRICANE
@@ -856,6 +890,13 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    During partial deployment, some AS-SETs will not have RASA objects.
    Tools SHOULD:
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 16]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
 
    *  Default to IRR data when RASA is unavailable (backward
       compatibility)
@@ -890,14 +931,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    lacks RASA protection or does not set doNotInherit, the entire chain
    remains vulnerable to transitive attacks.
 
-
-
-
-Abrahamsson              Expires 27 August 2026                [Page 16]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
-
    This limitation is not unique to RASA - it affects all AS-SET-based
    routing, including IRR-based AS-SETs.  The difference is that RASA
    provides a mechanism (doNotInherit) for AS-SET owners to break the
@@ -910,6 +943,16 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    RASA is designed for incremental deployment.  Content providers and
    Tier-1 operators can publish RASA objects immediately, even before
    widespread tool support.
+
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 17]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
 
    An alternative approach uses existing ASPA objects to synthesize AS-
    SET membership from provider relationships.  While this requires no
@@ -946,14 +989,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    2.  Create the RASA content specifying the AS-SET name, containing
        AS, member list, and appropriate flags.
 
-
-
-
-Abrahamsson              Expires 27 August 2026                [Page 17]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
-
    3.  Sign the RASA object using their RPKI private key via CMS
        [RFC5652].
 
@@ -963,6 +998,17 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    5.  Ensure the RASA object is included in the repository manifest and
        available via rsync or RRDP.
+
+
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 18]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
 
 11.2.  Consuming RASA Objects
 
@@ -999,21 +1045,26 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 11.4.  Detailed Operational Examples
 
-
-
-
-
-
-
-Abrahamsson              Expires 27 August 2026                [Page 18]
-
-Internet-Draft          RPKI AS-SET Authorization          February 2026
-
-
 11.4.1.  Example 1: Tier-1 Provider Customer AS-SET
 
    NTT (AS2914) maintains AS2914:AS-GLOBAL containing their customer
    ASNs.  Here's the complete operational workflow:
+
+
+
+
+
+
+
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 19]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
 
    Step 1: NTT publishes RASA-SET
      asSetName:     "AS2914:AS-GLOBAL"
@@ -1061,7 +1112,12 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
 
-Abrahamsson              Expires 27 August 2026                [Page 19]
+
+
+
+
+
+Abrahamsson              Expires 27 August 2026                [Page 20]
 
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
@@ -1117,7 +1173,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
 
-Abrahamsson              Expires 27 August 2026                [Page 20]
+Abrahamsson              Expires 27 August 2026                [Page 21]
 
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
@@ -1173,7 +1229,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
 
-Abrahamsson              Expires 27 August 2026                [Page 21]
+Abrahamsson              Expires 27 August 2026                [Page 22]
 
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
@@ -1229,7 +1285,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
 
-Abrahamsson              Expires 27 August 2026                [Page 22]
+Abrahamsson              Expires 27 August 2026                [Page 23]
 
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
@@ -1262,7 +1318,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    RPKI-based AS-SET authorization and identified the critical need for
    cryptographic verification in routing policy.
 
-13.  IRR Operator Considerations (To Be Investigated)
+13.  IRR Operator Considerations
 
    The introduction of RASA objects raises several open questions
    regarding the relationship between RPKI-authenticated AS-SET data and
@@ -1285,7 +1341,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
 
-Abrahamsson              Expires 27 August 2026                [Page 23]
+Abrahamsson              Expires 27 August 2026                [Page 24]
 
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
@@ -1341,7 +1397,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
 
-Abrahamsson              Expires 27 August 2026                [Page 24]
+Abrahamsson              Expires 27 August 2026                [Page 25]
 
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
@@ -1397,7 +1453,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
 
-Abrahamsson              Expires 27 August 2026                [Page 25]
+Abrahamsson              Expires 27 August 2026                [Page 26]
 
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
@@ -1453,7 +1509,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
 
-Abrahamsson              Expires 27 August 2026                [Page 26]
+Abrahamsson              Expires 27 August 2026                [Page 27]
 
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
@@ -1466,8 +1522,9 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
               (RPKI)", RFC 6488, 2012,
               <https://www.rfc-editor.org/info/rfc6488>.
 
-   [RFC8174]  Leiba, B., "Ambiguity of Key Words", BCP 14, RFC 8174,
-              2017, <https://www.rfc-editor.org/info/rfc8174>.
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, 2017,
+              <https://www.rfc-editor.org/info/rfc8174>.
 
 16.2.  Informative References
 
@@ -1508,5 +1565,4 @@ Author's Address
 
 
 
-
-Abrahamsson              Expires 27 August 2026                [Page 27]
+Abrahamsson              Expires 27 August 2026                [Page 28]
