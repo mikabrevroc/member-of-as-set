@@ -6,6 +6,10 @@ networker-260222.log
 *.txt
 *.html
 
+# But DO include the RFC draft files for easy reading
+!draft-carbonara-irr-member-of-as-set-*.txt
+!draft-carbonara-irr-member-of-as-set-*.html
+
 # Temporary files
 *.tmp
 .DS_Store
