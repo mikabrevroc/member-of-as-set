@@ -182,8 +182,8 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    MAS:  Member Autonomous System - an AS listed as a member
 
-   AS-SET Name:  An RPSL name identifying an AS-SET (e.g., AS-HURRICANE,
-      AS1299:AS-TWELVE99)
+   AS-SET Name:  An RPSL name identifying an AS-SET (e.g., AS6939:AS-
+      HURRICANE, AS1299:AS-TWELVE99)
 
 3.  Design Rationale
 
@@ -303,14 +303,15 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
       version 0.  Future versions may add fields or change semantics.
 
    asSetName:  The name of the AS-SET being authorized.  MUST start with
-      the prefix "AS-" followed by at least one character (e.g., "AS-
-      HURRICANE", "AS-GOOGLE").  Hierarchical names use the format
-      "ASN:AS-NAME" (e.g., "AS1299:AS-TWELVE99") where the ASN prefix
-      identifies the owning autonomous system.  For hierarchical names,
-      the containingAS must match the ASN in the hierarchical prefix.
-      This requirement aligns with RFC2622 Section 5 which reserves
-      names starting with "as-" for AS-SETs, providing namespace
-      separation between AS-SETs and autonomous system numbers.
+      the prefix "AS-" followed by at least one character (e.g.,
+      "AS6939:AS-HURRICANE", "AS15169:AS-GOOGLE").  Hierarchical names
+      use the format "ASN:AS-NAME" (e.g., "AS1299:AS-TWELVE99") where
+      the ASN prefix identifies the owning autonomous system.  For
+      hierarchical names, the containingAS must match the ASN in the
+      hierarchical prefix.  This requirement aligns with RFC2622
+      Section 5 which reserves names starting with "as-" for AS-SETs,
+      providing namespace separation between AS-SETs and autonomous
+      system numbers.
 
    containingAS:  The autonomous system number of the AS that owns the
       AS-SET.  This AS must be the subject of the RPKI certificate used
@@ -329,7 +330,6 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
       behavior).  This field prevents namespace ambiguity attacks where
       the same AS-SET name exists in multiple IRR databases with
       different members.
-
 
 
 
@@ -437,7 +437,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    Tier-1 provider AS-SETs:
 
    RASA Object (signed by AS15169):
-     asSetName:     "AS-GOOGLE"
+     asSetName:     "AS15169:AS-GOOGLE"
      containingAS:  15169
      members:       [15169, 16509, 36040, 36384]
      flags:         doNotInherit(0) = TRUE
@@ -450,9 +450,9 @@ Ytti                     Expires 27 August 2026                 [Page 8]
 Internet-Draft          RPKI AS-SET Authorization          February 2026
 
 
-   Now when a malicious AS-SET includes AS-GOOGLE, expansion stops at
-   the AS-SET reference and does not include Google's actual ASNs,
-   preventing route leaks.
+   Now when a malicious AS-SET includes AS15169:AS-GOOGLE, expansion
+   stops at the AS-SET reference and does not include Google's actual
+   ASNs, preventing route leaks.
 
 6.2.  Tier-1 Provider Protection
 
@@ -474,7 +474,7 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
    An enterprise with multiple ASNs wants consistent authorization:
 
    RASA Object (signed by enterprise AS):
-     asSetName:     "AS-ENTERPRISE"
+     asSetName:     "AS64501:AS-ENTERPRISE"
      containingAS:  64501
      members:       [64501, 64502, 64503]
      flags:         authoritative(1) = TRUE
@@ -482,20 +482,20 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 6.4.  IRR Namespace Binding
 
    Hurricane Electric (AS6939) wants to prevent namespace ambiguity
-   attacks where AS-HURRICANE exists in multiple IRR databases:
+   attacks where AS6939:AS-HURRICANE exists in multiple IRR databases:
 
    RASA Object (signed by AS6939):
-     asSetName:     "AS-HURRICANE"
+     asSetName:     "AS6939:AS-HURRICANE"
      containingAS:  6939
      irrSource:     "RADB"
      members:       [6939, 1, 2, 3, ...]
      flags:         authoritative(1) = TRUE,
                     doNotInherit(0) = TRUE
 
-   The irrSource field locks AS-HURRICANE to the RADB database only.
-   Tools will NOT query RIPE, ARIN, or other databases for this AS-SET.
-   This prevents attackers from registering AS-HURRICANE in other
-   databases with malicious members.
+   The irrSource field locks AS6939:AS-HURRICANE to the RADB database
+   only.  Tools will NOT query RIPE, ARIN, or other databases for this
+   AS-SET.  This prevents attackers from registering AS6939:AS-HURRICANE
+   in other databases with malicious members.
 
 
 
@@ -564,9 +564,9 @@ Internet-Draft          RPKI AS-SET Authorization          February 2026
 
    This creates a chain-of-trust problem: an attacker who compromises
    any AS-SET in the expansion chain can include arbitrary ASNs.  For
-   example, if a malicious actor creates AS-EVIL containing AS-GOOGLE,
-   and AS-GOOGLE has not set the doNotInherit flag, then AS-EVIL
-   inherits all Google ASNs.
+   example, if a malicious actor creates AS-EVIL containing AS15169:AS-
+   GOOGLE, and AS15169:AS-GOOGLE has not set the doNotInherit flag, then
+   AS-EVIL inherits all Google ASNs.
 
    *Critical Requirement:* For full security, every AS-SET in the
    expansion chain must protect itself.  If any AS-SET in the chain
