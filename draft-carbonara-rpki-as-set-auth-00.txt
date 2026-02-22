@@ -1,0 +1,896 @@
+
+
+
+
+Global Routing Operations                                        S. Ytti
+Internet-Draft                            NTT Communications Corporation
+Intended status: Standards Track                        23 February 2026
+Expires: 27 August 2026
+
+
+                 RPKI-Based AS-SET Authorization (RASA)
+                  draft-carbonara-rpki-as-set-auth-00
+
+Abstract
+
+   This document defines a new Resource Public Key Infrastructure (RPKI)
+   object type called RPKI AS-SET Authorization (RASA).  RASA allows
+   autonomous systems to cryptographically sign the membership of their
+   AS-SETs, enabling secure AS-SET verification during route filter
+   generation.
+
+   The RASA object addresses a fundamental limitation of existing IRR-
+   based AS-SET mechanisms: the inability to verify AS-SET membership
+   cryptographically.  By storing AS-SET membership in RPKI-signed
+   objects, operators can generate route filters with cryptographic
+   assurance that AS-SET members are authentic.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 27 August 2026.
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 1]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
+   2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   3
+   3.  Design Rationale  . . . . . . . . . . . . . . . . . . . . . .   4
+     3.1.  IRR-Based Approaches  . . . . . . . . . . . . . . . . . .   4
+     3.2.  ASPA Comparison . . . . . . . . . . . . . . . . . . . . .   4
+     3.3.  Design Goals  . . . . . . . . . . . . . . . . . . . . . .   5
+   4.  The RASA Object . . . . . . . . . . . . . . . . . . . . . . .   5
+     4.1.  Object Format . . . . . . . . . . . . . . . . . . . . . .   5
+     4.2.  Field Definitions . . . . . . . . . . . . . . . . . . . .   6
+   5.  RASA Verification . . . . . . . . . . . . . . . . . . . . . .   7
+     5.1.  Signature Validation  . . . . . . . . . . . . . . . . . .   7
+     5.2.  AS-SET Expansion with RASA  . . . . . . . . . . . . . . .   7
+   6.  Use Cases . . . . . . . . . . . . . . . . . . . . . . . . . .   7
+     6.1.  Content Provider Protection . . . . . . . . . . . . . . .   7
+     6.2.  Tier-1 Provider Protection  . . . . . . . . . . . . . . .   8
+     6.3.  Enterprise Multi-ASN  . . . . . . . . . . . . . . . . . .   8
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . .   8
+     7.1.  RPKI Key Management . . . . . . . . . . . . . . . . . . .   8
+     7.2.  Partial Deployment  . . . . . . . . . . . . . . . . . . .   9
+     7.3.  Chain Attack Mitigation . . . . . . . . . . . . . . . . .   9
+     7.4.  Chain-of-Trust Limitations  . . . . . . . . . . . . . . .   9
+   8.  Deployment Considerations . . . . . . . . . . . . . . . . . .  10
+     8.1.  Phase 1: High-Value AS-SETs . . . . . . . . . . . . . . .  10
+     8.2.  Phase 2: Tool Integration . . . . . . . . . . . . . . . .  10
+     8.3.  Phase 3: Widespread Adoption  . . . . . . . . . . . . . .  10
+     8.4.  Alternative: ASPA Synthesis . . . . . . . . . . . . . . .  10
+   9.  Operational Guidance  . . . . . . . . . . . . . . . . . . . .  11
+     9.1.  Publishing RASA Objects . . . . . . . . . . . . . . . . .  11
+     9.2.  Consuming RASA Objects  . . . . . . . . . . . . . . . . .  12
+     9.3.  Monitoring and Alerting . . . . . . . . . . . . . . . . .  12
+   10. Relationship to ASGroup . . . . . . . . . . . . . . . . . . .  12
+     10.1.  ASGroup Innovations  . . . . . . . . . . . . . . . . . .  12
+     10.2.  RASA Simplifications . . . . . . . . . . . . . . . . . .  13
+     10.3.  Acknowledgments  . . . . . . . . . . . . . . . . . . . .  13
+   11. Failure Modes . . . . . . . . . . . . . . . . . . . . . . . .  13
+     11.1.  Signature Validation Failures  . . . . . . . . . . . . .  13
+     11.2.  Repository Availability Failures . . . . . . . . . . . .  14
+     11.3.  Policy Violation Failures  . . . . . . . . . . . . . . .  14
+     11.4.  Chain Protection Failures  . . . . . . . . . . . . . . .  14
+   12. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  15
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 2]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   13. References  . . . . . . . . . . . . . . . . . . . . . . . . .  15
+     13.1.  Normative References . . . . . . . . . . . . . . . . . .  15
+     13.2.  Informative References . . . . . . . . . . . . . . . . .  15
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  16
+
+1.  Introduction
+
+   Internet Routing Registry (IRR) databases have long been used to
+   generate BGP route filters.  The Routing Policy Specification
+   Language (RPSL) [RFC2622] defines the as-set object, which represents
+   a set of autonomous systems.  However, IRR-based AS-SETs suffer from
+   a fundamental security limitation: membership is controlled solely by
+   the AS-SET owner, without cryptographic verification or member
+   authorization.
+
+   This creates two significant problems:
+
+   1.  *Unauthorized Inclusion:* An AS-SET owner can include any
+       autonomous system without authorization, potentially allowing
+       route leaks or policy violations.
+
+   2.  *Transitive Chain Attacks:* AS-SET expansion is transitive - if
+       AS-SET A contains AS-SET B, and B contains AS C, then A
+       implicitly contains C.  This creates a chain of trust where
+       compromising any link compromises the entire chain.
+
+   RPKI AS-SET Authorization (RASA) addresses these limitations by:
+
+   *  Providing cryptographic signatures for AS-SET membership via RPKI
+
+   *  Enabling verification during AS-SET expansion
+
+   *  Supporting "do-not-inherit" semantics to prevent transitive
+      attacks
+
+   *  Maintaining backward compatibility with existing IRR
+      infrastructure
+
+2.  Terminology
+
+   The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD,
+   SHOULD NOT, RECOMMENDED, MAY, and OPTIONAL in this document are to be
+   interpreted as described in BCP 14 [RFC2119] [RFC8174].
+
+   RASA:  RPKI AS-SET Authorization object
+
+   CAS:  Containing Autonomous System - the AS that owns the AS-SET
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 3]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   MAS:  Member Autonomous System - an AS listed as a member
+
+   AS-SET Name:  An RPSL name identifying an AS-SET (e.g., AS-HURRICANE,
+      AS1299:AS-TWELVE99)
+
+3.  Design Rationale
+
+   The RASA design is informed by several existing mechanisms and their
+   limitations:
+
+3.1.  IRR-Based Approaches
+
+   IRR-based AS-SETs rely on the AS-SET owner's mnt-by attribute for
+   authentication.  This has several weaknesses:
+
+   *  No cryptographic verification of membership
+
+   *  Members cannot prevent unauthorized inclusion
+
+   *  Transitive inclusion cannot be controlled
+
+   *  Authentication relies on passwords or PGP keys in IRR
+
+   The member-of-as-set proposal [I-D.member-of-as-set] addresses some
+   of these issues but requires the IRR database to support a new object
+   type and does not provide cryptographic verification.
+
+   Prior work by Snijders and Korsbäck proposed ASGroup [I-D.asgroup],
+   an RPKI-based AS grouping mechanism with a complex opt-out mechanism.
+   RASA takes a different approach with a simplified model that
+   prioritizes IRR compatibility and incremental deployment.  The opt-
+   out mechanism in ASGroup proved difficult to reason about
+   operationally and added significant complexity to both specification
+   and implementation.
+
+3.2.  ASPA Comparison
+
+   Autonomous System Provider Authorization (ASPA) [I-D.aspa] provides
+   cryptographic verification of provider relationships.  ASPA proves
+   that a Customer AS (CAS) has authorized a Provider AS (PAS) as its
+   upstream.
+
+   However, ASPA has a different scope than RASA:
+
+   *  ASPA proves provider-customer relationships
+
+   *  RASA proves AS-SET membership
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 4]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   *  ASPA is used during BGP path validation
+
+   *  RASA is used during route filter generation
+
+   While both use RPKI, they serve complementary purposes and are not
+   interchangeable.
+
+3.3.  Design Goals
+
+   RASA is designed with the following goals:
+
+   1.  *Cryptographic Verification:* Use RPKI signing to ensure AS-SET
+       membership cannot be spoofed
+
+   2.  *Member Protection:* Prevent unauthorized inclusion of ASNs in
+       AS-SETs
+
+   3.  *Chain Control:* Allow AS-SET owners to prevent transitive
+       inclusion attacks
+
+   4.  *Backward Compatibility:* Work alongside existing IRR
+       infrastructure
+
+   5.  *Incremental Deployment:* Provide value even with partial
+       adoption
+
+4.  The RASA Object
+
+   The RPKI AS-SET Authorization (RASA) object is a cryptographically
+   signed RPKI object that authorizes the membership of an AS-SET.
+
+4.1.  Object Format
+
+   The RASA object is encoded using CMS [RFC5652] with the SignedData
+   content type.  The eContentType is:
+
+             id-rpki-rasa OBJECT IDENTIFIER ::= { id-rpki 42 }
+
+   The RASA content has the following ASN.1 structure:
+
+
+
+
+
+
+
+
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 5]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   RasaContent ::= SEQUENCE {
+     version          [0] INTEGER DEFAULT 0,
+     asSetName            UTF8String,
+     containingAS         ASID,
+     members              SEQUENCE OF ASID,
+     flags                RasaFlags OPTIONAL,
+     notBefore            GeneralizedTime,
+     notAfter             GeneralizedTime
+   }
+
+   ASID ::= INTEGER (0..4294967295)
+
+   RasaFlags ::= BIT STRING {
+     doNotInherit(0),
+     authoritative(1)
+   }
+
+4.2.  Field Definitions
+
+   version:  The version of the RASA format.  This document defines
+      version 0.  Future versions may add fields or change semantics.
+
+   asSetName:  The name of the AS-SET being authorized.  This is the
+      same name used in IRR databases, e.g., "AS-HURRICANE" or
+      "AS1299:AS-TWELVE99".  For hierarchical AS-SET names, the
+      containingAS must match the ASN in the hierarchical prefix.
+
+   containingAS:  The autonomous system number of the AS that owns the
+      AS-SET.  This AS must be the subject of the RPKI certificate used
+      to sign the RASA object.
+
+   members:  A list of autonomous system numbers that are members of
+      this AS-SET.  Each ASID must be unique and sorted in ascending
+      order.  The containingAS MAY be included in members if it is also
+      a member of the AS-SET.
+
+   flags:  Optional flags controlling AS-SET behavior. doNotInherit:
+      When set, this AS-SET can be referenced by other AS-SETs, but its
+      members are not transitively inherited.  This prevents the "chain
+      of trust" attack where including this AS-SET in a malicious AS-SET
+      would also include all members. authoritative: When set, this RASA
+      is the canonical membership list for the AS-SET.  Tools should
+      prefer this over IRR data.
+
+   notBefore, notAfter:  The validity period of the RASA object.  These
+      times are interpreted according to RPKI policies.
+
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 6]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+5.  RASA Verification
+
+   RASA objects are verified using standard RPKI validation procedures.
+
+5.1.  Signature Validation
+
+   The RASA object MUST be validated according to [RFC6488]:
+
+   1.  Verify the CMS signature using the signer's certificate
+
+   2.  Verify the certificate chain to a trust anchor
+
+   3.  Verify the certificate's subject matches the containingAS
+
+   4.  Verify the validity period (notBefore, notAfter)
+
+   5.  Check for revocation using CRLs or OCSP
+
+5.2.  AS-SET Expansion with RASA
+
+   When expanding an AS-SET for route filter generation, RPKI-aware
+   tools SHOULD perform the following:
+
+   1.  Query the IRR for the AS-SET definition, obtaining the list of
+       members (ASNs and nested AS-SETs).
+
+   2.  For each member ASN, verify if a RASA object exists that lists
+       this AS-SET as authorized.  If the ASN has published a RASA and
+       this AS-SET is not in the authorized list, log a warning or
+       exclude the ASN based on policy.
+
+   3.  For each nested AS-SET, query RPKI for a RASA object for that AS-
+       SET.  If a RASA exists with doNotInherit flag set, include only
+       the AS-SET reference in the expansion, not its members.  If the
+       authoritative flag is set, use the RASA member list instead of
+       the IRR member list.  Otherwise, use the RASA member list as
+       authoritative and recurse.
+
+6.  Use Cases
+
+6.1.  Content Provider Protection
+
+   Google (AS15169) wants to ensure it is only included in specific
+   Tier-1 provider AS-SETs:
+
+
+
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 7]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   RASA Object (signed by AS15169):
+     asSetName:     "AS-GOOGLE"
+     containingAS:  15169
+     members:       [15169, 16509, 36040, 36384]
+     flags:         doNotInherit(0) = TRUE
+
+   Now when a malicious AS-SET includes AS-GOOGLE, expansion stops at
+   the AS-SET reference and does not include Google's actual ASNs,
+   preventing route leaks.
+
+6.2.  Tier-1 Provider Protection
+
+   Arelion (AS1299) wants to protect its customer AS-SET:
+
+   RASA Object (signed by AS1299):
+     asSetName:     "AS1299:AS-TWELVE99"
+     containingAS:  1299
+     members:       [64496, 64497, 64498, 64499, ...]
+     flags:         doNotInherit(0) = TRUE,
+                    authoritative(1) = TRUE
+
+   The authoritative flag tells tools to use this RASA member list
+   instead of the IRR data.  The doNotInherit flag prevents transitive
+   inclusion attacks.
+
+6.3.  Enterprise Multi-ASN
+
+   An enterprise with multiple ASNs wants consistent authorization:
+
+   RASA Object (signed by enterprise AS):
+     asSetName:     "AS-ENTERPRISE"
+     containingAS:  64501
+     members:       [64501, 64502, 64503]
+     flags:         authoritative(1) = TRUE
+
+7.  Security Considerations
+
+   RASA provides cryptographic assurance of AS-SET membership, but
+   several security considerations apply:
+
+7.1.  RPKI Key Management
+
+   The security of RASA depends on proper RPKI key management:
+
+   *  AS operators must secure their RPKI private keys.  A compromised
+      key allows an attacker to create fraudulent RASA objects.
+
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 8]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   *  RASA objects should be published promptly to minimize windows
+      where IRR data is authoritative.
+
+   *  Relying parties must validate RASA objects according to RPKI
+      policies and check revocation status.
+
+7.2.  Partial Deployment
+
+   During partial deployment, some AS-SETs will not have RASA objects.
+   Tools SHOULD:
+
+   *  Default to IRR data when RASA is unavailable (backward
+      compatibility)
+
+   *  Provide configuration options to require RASA for specific AS-SETs
+      or all AS-SETs
+
+   *  Log warnings when falling back to IRR for high-value AS-SETs
+
+7.3.  Chain Attack Mitigation
+
+   The doNotInherit flag mitigates transitive chain attacks.  However,
+   if an AS-SET owner does not set this flag, their members remain
+   vulnerable to transitive inclusion.  AS-SET owners should carefully
+   consider whether their AS-SET should be transitively inheritable.
+
+7.4.  Chain-of-Trust Limitations
+
+   RASA provides cryptographic verification of individual AS-SETs, but a
+   fundamental limitation remains: AS-SET expansion is transitive.  When
+   AS-SET A contains AS-SET B, and B contains AS-SET C, then A
+   implicitly contains all members of C.
+
+   This creates a chain-of-trust problem: an attacker who compromises
+   any AS-SET in the expansion chain can include arbitrary ASNs.  For
+   example, if a malicious actor creates AS-EVIL containing AS-GOOGLE,
+   and AS-GOOGLE has not set the doNotInherit flag, then AS-EVIL
+   inherits all Google ASNs.
+
+   *Critical Requirement:* For full security, every AS-SET in the
+   expansion chain must protect itself.  If any AS-SET in the chain
+   lacks RASA protection or does not set doNotInherit, the entire chain
+   remains vulnerable to transitive attacks.
+
+
+
+
+
+
+
+
+Ytti                     Expires 27 August 2026                 [Page 9]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   This limitation is not unique to RASA - it affects all AS-SET-based
+   routing, including IRR-based AS-SETs.  The difference is that RASA
+   provides a mechanism (doNotInherit) for AS-SET owners to break the
+   chain.  Full protection requires widespread adoption at the internet
+   core: Tier-1 providers and major content networks must publish RASA
+   objects with appropriate flags.
+
+8.  Deployment Considerations
+
+   RASA is designed for incremental deployment:
+
+8.1.  Phase 1: High-Value AS-SETs
+
+   Content providers (Google, Microsoft, Amazon) and Tier-1 transit
+   providers publish RASA objects for their AS-SETs.  Tools begin
+   supporting RASA verification.  Even with partial adoption, operators
+   gain cryptographic assurance for high-value AS-SETs.
+
+8.2.  Phase 2: Tool Integration
+
+   bgpq4 and other IRR tools add RASA support.  RPKI validators
+   (Routinator, rpki-client) add RASA publication and query APIs.
+   Network operators can enable strict RASA modes.
+
+8.3.  Phase 3: Widespread Adoption
+
+   Industry standard to publish RASA objects for all AS-SETs.  IRR
+   databases may automatically generate RASA objects from authenticated
+   updates.  Route filter generation defaults to RASA-verified mode.
+
+8.4.  Alternative: ASPA Synthesis
+
+   An alternative approach to AS-SET authorization uses existing ASPA
+   [I-D.aspa] objects to synthesize AS-SET membership.  Rather than
+   creating new RASA objects, operators can derive AS-SET contents from
+   the provider relationships already published in RPKI.
+
+   *Concept:* If multiple ASNs list AS2914 as their provider in ASPA
+   objects, an operator can synthesize an AS-SET "RPKI::AS2914:AS-
+   CUSTOMERS" containing those ASNs.  This is analogous to RIPE-731,
+   which uses ROAs to validate route objects.
+
+   *Advantages:*
+
+   *  Uses existing ASPA objects (1000+ already published)
+
+   *  No new object types or infrastructure required
+
+
+
+
+Ytti                     Expires 27 August 2026                [Page 10]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   *  Leverages existing RPKI validation infrastructure
+
+   *  Immediate deployment possible with existing data
+
+   *Limitations:*
+
+   *  Only captures provider-customer relationships, not arbitrary
+      groupings
+
+   *  Requires all members to publish ASPA objects
+
+   *  No mechanism for opt-out or complex membership rules
+
+   *  Cannot represent non-transit relationships (peers, IXPs, etc.)
+
+   ASPA synthesis is complementary to RASA.  Operators may use ASPA-
+   derived AS-SETs for provider-customer relationships while using RASA
+   for complex multi-lateral groupings.  Further research is needed to
+   define specific algorithms for ASPA-based AS-SET generation.
+
+9.  Operational Guidance
+
+   This section provides practical guidance for network operators
+   deploying RASA in production environments.
+
+9.1.  Publishing RASA Objects
+
+   To publish a RASA object, an AS operator must:
+
+   1.  Generate a RPKI certificate for their AS if not already available
+       through their Regional Internet Registry (RIR).
+
+   2.  Create the RASA content specifying the AS-SET name, containing
+       AS, member list, and appropriate flags.
+
+   3.  Sign the RASA object using their RPKI private key via CMS
+       [RFC5652].
+
+   4.  Publish the signed RASA object to their RPKI repository,
+       typically via their RIR's publication service or a private
+       repository if using delegated RPKI.
+
+   5.  Ensure the RASA object is included in the repository manifest and
+       available via rsync or RRDP.
+
+
+
+
+
+
+
+Ytti                     Expires 27 August 2026                [Page 11]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+9.2.  Consuming RASA Objects
+
+   Operators generating route filters SHOULD integrate RASA validation
+   into their existing IRR tools:
+
+   1.  Query RPKI repositories for RASA objects alongside IRR AS-SET
+       queries.
+
+   2.  Validate RASA signatures using standard RPKI validation libraries
+       (e.g., rpki-client, Routinator).
+
+   3.  Apply RASA flags during AS-SET expansion.  Honor doNotInherit to
+       prevent transitive inclusion.  Prefer authoritative RASA member
+       lists over IRR data.  Fall back to IRR data when RASA is
+       unavailable.
+
+   4.  Log validation failures and policy decisions for auditing.
+
+9.3.  Monitoring and Alerting
+
+   Operators SHOULD monitor RASA validation status:
+
+   *  Track RASA objects for critical AS-SETs (content providers, Tier-1
+      providers) and alert on validation failures.
+
+   *  Monitor RASA object expiration dates and alert before expiry.
+
+   *  Log fallback events when reverting to IRR data due to missing or
+      invalid RASA objects.
+
+   *  Track unexpected AS-SET membership changes detected during RASA
+      validation.
+
+10.  Relationship to ASGroup
+
+   RASA builds upon the foundational work of Snijders and Korsbäck, who
+   proposed the ASGroup mechanism [I-D.asgroup] in 2022.  While ASGroup
+   introduced important concepts for RPKI-based AS-SET authorization, it
+   expired without achieving deployment.  RASA represents an evolution
+   of these ideas with practical deployment considerations.
+
+10.1.  ASGroup Innovations
+
+   ASGroup introduced several important concepts that influenced RASA:
+
+   *  RPKI-signed AS group objects providing cryptographic verification
+      of membership.
+
+
+
+
+Ytti                     Expires 27 August 2026                [Page 12]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   *  Separation between the containing AS (group owner) and member
+      ASes.
+
+   *  The concept of controlling transitive inclusion through the
+      referenceable flag.
+
+   *  Recognition that IRR-based AS-SETs lack cryptographic
+      verification.
+
+10.2.  RASA Simplifications
+
+   RASA addresses several factors that contributed to ASGroup's
+   complexity:
+
+   *  *Removed opt-out mechanism:* ASGroup's separate Opt-Out Listing
+      objects added significant complexity to validation and reasoning.
+      RASA eliminates opt-out in favor of explicit membership
+      authorization via the member list.
+
+   *  *Simplified flag semantics:* ASGroup's referenceable boolean was
+      replaced with doNotInherit, providing more intuitive control over
+      transitive inclusion.
+
+   *  *IRR compatibility:* RASA is designed to work alongside existing
+      IRR infrastructure during transition, whereas ASGroup appeared to
+      be a complete replacement.
+
+   *  *Clear deployment path:* RASA includes phased deployment guidance
+      with incremental adoption stages.
+
+10.3.  Acknowledgments
+
+   The authors acknowledge Job Snijders and Fredrik Korsbäck for their
+   pioneering work on ASGroup, which established the foundation for
+   RPKI-based AS-SET authorization and identified the critical need for
+   cryptographic verification in routing policy.
+
+11.  Failure Modes
+
+   This section documents expected failure modes and recommended
+   responses during RASA deployment and operation.
+
+11.1.  Signature Validation Failures
+
+   When RASA signature validation fails, operators SHOULD:
+
+   *  Fall back to IRR data for the affected AS-SET if configured for
+      backward compatibility.
+
+
+
+Ytti                     Expires 27 August 2026                [Page 13]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   *  Log the validation failure with specific error details (expired
+      certificate, invalid signature, revocation, etc.).
+
+   *  Alert operations staff if the failure affects critical AS-SETs and
+      strict RASA mode is enabled.
+
+   *  Continue processing other AS-SETs; do not fail the entire route
+      filter generation.
+
+11.2.  Repository Availability Failures
+
+   When RPKI repositories are unavailable:
+
+   *  Use cached RASA data if available and within validity period.
+
+   *  Fall back to IRR data with appropriate logging if cached data is
+      unavailable or expired.
+
+   *  Retry repository queries with exponential backoff.
+
+   *  Alert on persistent repository failures affecting validation.
+
+11.3.  Policy Violation Failures
+
+   When RASA validation detects policy violations (unauthorized AS-SET
+   inclusion):
+
+   *  Exclude the violating ASN from the route filter expansion.
+
+   *  Log the violation with details of the unauthorized inclusion.
+
+   *  Alert network operations if the violation involves high-value AS-
+      SETs or appears to be an attack.
+
+   *  Provide configuration option to warn-only vs. reject for gradual
+      policy adoption.
+
+11.4.  Chain Protection Failures
+
+   When an AS-SET in the expansion chain lacks protection:
+
+   *  Process the chain normally if the unprotected AS-SET has
+      doNotInherit set (intentionally unprotected).
+
+   *  Log a warning when encountering unprotected AS-SETs in otherwise
+      protected chains.
+
+
+
+
+
+Ytti                     Expires 27 August 2026                [Page 14]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   *  Provide option to require full chain protection for high-security
+      environments.
+
+   *  Document the specific unprotected AS-SETs for follow-up with
+      operators.
+
+12.  IANA Considerations
+
+   This document requests IANA to:
+
+   1.  Register the RPKI Object Type for RASA:
+
+   Object Type: RASA (RPKI AS-SET Authorization)
+   OID: { id-rpki 42 }
+   Reference: This document
+
+   2.  Register the file extension and media type:
+
+   File Extension: .rasa
+   Media Type: application/rpki-rasa
+
+13.  References
+
+13.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC2622]  Alaettinoglu, C., Villamizar, C., and E. Gerich, "Routing
+              Policy Specification Language (RPSL)", RFC 2622, 1999,
+              <https://www.rfc-editor.org/info/rfc2622>.
+
+   [RFC5652]  Housley, R., "Cryptographic Message Syntax (CMS)",
+              RFC 5652, 2009, <https://www.rfc-editor.org/info/rfc5652>.
+
+   [RFC6488]  Huston, G., Michaelson, G., and R. Loomans, "Subject Key
+              Identifier (SKI) for RPKI", RFC 6488, 2012,
+              <https://www.rfc-editor.org/info/rfc6488>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Key Words", BCP 14, RFC 8174,
+              2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+13.2.  Informative References
+
+
+
+
+
+
+
+Ytti                     Expires 27 August 2026                [Page 15]
+
+Internet-Draft          RPKI AS-SET Authorization          February 2026
+
+
+   [I-D.aspa] Azimov, A., "ASPA Profile", Work in Progress, Internet-
+              Draft, draft-ietf-sidrops-aspa-profile, 2024,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-sidrops-
+              aspa-profile>.
+
+   [I-D.asgroup]
+              Snijders, J. and F. Korsbäck, "RPKI ASGroup", Work in
+              Progress, Internet-Draft, draft-spaghetti-sidrops-rpki-
+              asgroup, 2022, <https://datatracker.ietf.org/doc/html/
+              draft-spaghetti-sidrops-rpki-asgroup>.
+
+   [I-D.member-of-as-set]
+              Ytti, S., "Membership Verification for Autonomous System
+              Sets", Work in Progress, Internet-Draft, draft-carbonara-
+              irr-member-of-as-set, 2026,
+              <https://datatracker.ietf.org/doc/html/draft-carbonara-
+              irr-member-of-as-set>.
+
+Author's Address
+
+   Saku Ytti
+   NTT Communications Corporation
+   Email: saku@ytti.cy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ytti                     Expires 27 August 2026                [Page 16]
