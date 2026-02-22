@@ -246,10 +246,15 @@ RasaContent ::= SEQUENCE {
           </dd>
           <dt>asSetName:</dt>
           <dd>
-            The name of the AS-SET being authorized. This is the same name
-            used in IRR databases, e.g., "AS-HURRICANE" or "AS1299:AS-TWELVE99".
-            For hierarchical AS-SET names, the containingAS must match the
-            ASN in the hierarchical prefix.
+            The name of the AS-SET being authorized. MUST start with the
+            prefix "AS-" followed by at least one character (e.g.,
+            "AS-HURRICANE", "AS-GOOGLE"). Hierarchical names use the format
+            "ASN:AS-NAME" (e.g., "AS1299:AS-TWELVE99") where the ASN prefix
+            identifies the owning autonomous system. For hierarchical names,
+            the containingAS must match the ASN in the hierarchical prefix.
+            This requirement aligns with RFC2622 Section 5 which reserves
+            names starting with "as-" for AS-SETs, providing namespace
+            separation between AS-SETs and autonomous system numbers.
           </dd>
           <dt>containingAS:</dt>
           <dd>
@@ -312,6 +317,33 @@ RasaContent ::= SEQUENCE {
           <li>Verify the certificate's subject matches the containingAS</li>
           <li>Verify the validity period (notBefore, notAfter)</li>
           <li>Check for revocation using CRLs or OCSP</li>
+        </ol>
+      </section>
+      <section anchor="content-validation">
+        <name>Content Validation</name>
+        <t>
+          In addition to signature validation, the RASA content MUST be
+          validated for conformance to this specification:
+        </t>
+        <ol spacing="normal">
+          <li>
+            The asSetName MUST start with "AS-" (case-insensitive). RASA
+            objects with asSetName not conforming to RFC2622 naming
+            conventions MUST be rejected. This prevents namespace collisions
+            between AS-SETs and autonomous system numbers.
+          </li>
+          <li>
+            For hierarchical AS-SET names (e.g., "AS1299:AS-TWELVE99"), the
+            ASN component MUST match the containingAS field.
+          </li>
+          <li>
+            The members list MUST contain only valid ASNs (no AS-SET names
+            in the members list; nested AS-SETs are handled via expansion).
+          </li>
+          <li>
+            All ASIDs in the members list MUST be sorted in ascending order
+            with no duplicates.
+          </li>
         </ol>
       </section>
       <section anchor="as-set-expansion">
@@ -746,6 +778,105 @@ RASA Object (signed by AS6939):
           pioneering work on ASGroup, which established the foundation for
           RPKI-based AS-SET authorization and identified the critical need
           for cryptographic verification in routing policy.
+        </t>
+      </section>
+    </section>
+    <section anchor="irr-operator-considerations" toc="default">
+      <name>IRR Operator Considerations (To Be Investigated)</name>
+      <t>
+        The introduction of RASA objects raises several open questions
+        regarding the relationship between RPKI-authenticated AS-SET data
+        and existing IRR database entries. This section documents known
+        issues and potential approaches without making definitive
+        recommendations, as operational experience is required to
+        determine best practices.
+      </t>
+      <section anchor="irr-deletion-questions">
+        <name>IRR Object Deletion vs Retention</name>
+        <t>
+          When an AS-SET owner publishes a RASA object with the
+          authoritative flag set, questions arise regarding the fate of
+          the corresponding IRR AS-SET:
+        </t>
+        <ul spacing="normal">
+          <li>
+            <strong>Deletion:</strong> Should the IRR AS-SET be deleted?
+            Issues include: lack of cryptographic deletion in IRR,
+            persistence in mirrors, and potential breakage of legacy
+            tools that do not yet support RPKI.
+          </li>
+          <li>
+            <strong>Retention:</strong> Should the IRR AS-SET be kept
+            indefinitely? Issues include: potential confusion when
+            IRR and RASA data diverge, and validators needing clear
+            precedence rules.
+          </li>
+          <li>
+            <strong>Deprecation markers:</strong> Can IRR objects be
+            marked as deprecated? Issues include: lack of standardized
+            deprecation attributes in IRR, and varying support across
+            IRR database implementations.
+          </li>
+        </ul>
+        <t>
+          Further investigation is needed to understand operational
+          impacts and develop migration guidance.
+        </t>
+      </section>
+      <section anchor="irr-synchronization">
+        <name>IRR-RASA Synchronization</name>
+        <t>
+          If both IRR and RASA objects exist for the same AS-SET,
+          synchronization questions arise:
+        </t>
+        <ul spacing="normal">
+          <li>
+            <strong>Source of truth:</strong> When RASA authoritative
+            flag is set, validators use RASA. However, IRR databases
+            may serve stale data to legacy clients. Is dual
+            maintenance required during transition?
+          </li>
+          <li>
+            <strong>Automated updates:</strong> Should IRR databases
+            automatically generate AS-SET objects from RASA data?
+            This would require significant IRR infrastructure changes
+            and trust in RPKI validation.
+          </li>
+          <li>
+            <strong>Conflict detection:</strong> Should validators
+            detect when IRR and RASA data differ significantly?
+            What actions should be taken on detection?
+          </li>
+        </ul>
+        <t>
+          Operational deployment experience is needed to inform
+          synchronization strategies.
+        </t>
+      </section>
+      <section anchor="irr-transition-period">
+        <name>Transition Period Management</name>
+        <t>
+          The expected 5-10 year transition period raises operational
+          questions:
+        </t>
+        <ul spacing="normal">
+          <li>
+            <strong>Gradual adoption:</strong> How should operators
+            manage AS-SETs where some members have RASA objects and
+            others do not?
+          </li>
+          <li>
+            <strong>Tool compatibility:</strong> How should networks
+            handle tools that only query IRR during the transition?
+          </li>
+          <li>
+            <strong>Documentation:</strong> What documentation should
+            accompany RASA objects to guide IRR operators and users?
+          </li>
+        </ul>
+        <t>
+          These questions require community feedback and operational
+          experience before standardization.
         </t>
       </section>
     </section>
