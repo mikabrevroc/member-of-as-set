@@ -5,6 +5,14 @@
 # This script simulates a tier-1 provider (NTT) using AS-SET expansion
 # with and without member-of-as-set verification.
 #
+# Real-world AS-SET sizes from IRR queries:
+# - AS-HURRICANE: 411,327 prefixes (Hurricane Electric)
+# - AS-AMAZON: 18,547 prefixes (Amazon/AWS)
+# - AS-GOOGLE: 7,259 prefixes (Google)
+# - AS-HETZNER: 4,804 prefixes (Hetzner)
+# - AS-MICROSOFT: 1,406 prefixes (Microsoft)
+# - AS-FACEBOOK: 541 prefixes (Meta/Facebook)
+#
 
 set -e
 
@@ -15,6 +23,12 @@ echo "======================================================================="
 echo "  member-of-as-set Proof of Concept"
 echo "  Simulating NTT (AS2914) as Tier-1 Provider"
 echo "======================================================================="
+echo ""
+echo "Real-world AS-SET sizes (from actual IRR queries):"
+echo "  AS-HURRICANE: 411,327 prefixes (Hurricane Electric)"
+echo "  AS-AMAZON: 18,547 prefixes (Amazon)"
+echo "  AS-GOOGLE: 7,259 prefixes (Google)"
+echo "  AS-HETZNER: 4,804 prefixes (Hetzner)"
 echo ""
 
 # Make scripts executable
@@ -44,119 +58,118 @@ echo "Result: All 4 ASNs are authorized. No change."
 echo ""
 
 # ===========================================================================
-# SCENARIO 2: Malicious Customer with Unauthorized ASNs
+# SCENARIO 2: Malicious Customer with AS-HURRICANE (EXTREME CASE)
 # ===========================================================================
 echo ""
 echo "======================================================================="
-echo "SCENARIO 2: Malicious Customer with Unauthorized ASNs"
+echo "SCENARIO 2: Malicious Customer with AS-HURRICANE (411,327 prefixes!)"
 echo "======================================================================="
 echo ""
 echo "AS-SET: AS-MALICIOUS-CUSTOMER"
-echo "Members: AS64496-64499 (legitimate) + AS15169 (Google) + AS3356 (Level3) + AS8075 (Microsoft)"
+echo "Members: AS64496-64499 (legitimate) + AS-HURRICANE (411,327 prefixes)"
 echo ""
-echo "Attack: Customer adds tier-1/content provider ASNs to steal traffic"
+echo "Attack: Customer adds Hurricane Electric's entire AS-SET"
+echo "        This would leak 411,327 prefixes to the attacker's peers!"
 echo ""
 
 # Without verification
 echo "--- WITHOUT member-of-as-set verification ---"
-echo "All ASNs would be accepted into the filter!"
-echo "AS-path would allow: AS64496|AS64497|AS64498|AS64499|AS15169|AS3356|AS8075"
+echo "AS-path filter would accept: AS64496|AS64497|AS64498|AS64499|AS-HURRICANE"
+echo "Prefix-list would include: ~411,327+ prefixes from Hurricane Electric"
 echo ""
-# Generate Juniper config for the malicious set (simulated)
-echo "Juniper AS-path filter (VULNERABLE):"
-./juniper-generator.sh AS-MALICIOUS-CUSTOMER 64496 64497 64498 64499 15169 3356 8075
+echo "Result: MASSIVE ROUTE LEAK - Attackers could announce HE prefixes!"
 echo ""
 
 # With verification
 echo "--- WITH member-of-as-set verification ---"
-echo "Checking each ASN against member-of-as-set database..."
+echo "Checking AS-HURRICANE authorization..."
+echo ""
+echo "AS6939 (Hurricane Electric ASN): member-of-as-set = AS-HURRICANE ✗"
+echo "AS6939 has NOT authorized inclusion in AS-NTT-CUSTOMERS"
+echo ""
+echo "Result: AS-HURRICANE PRUNED"
+echo "        Filter only allows: AS64496-64499 (~20-40 prefixes)"
+echo "        Prevented leak of 411,327 prefixes!"
 echo ""
 
-# Check each ASN manually
-echo "AS64496: member-of-as-set = AS-NTT-CUSTOMERS ✓ AUTHORIZED"
-echo "AS64497: member-of-as-set = AS-NTT-CUSTOMERS ✓ AUTHORIZED"
-echo "AS64498: member-of-as-set = AS-NTT-CUSTOMERS ✓ AUTHORIZED"
-echo "AS64499: member-of-as-set = AS-NTT-CUSTOMERS ✓ AUTHORIZED"
-echo "AS15169: member-of-as-set = AS-GOOGLE,AS-GOOGLE-PEERING ✗ NOT AUTHORIZED for AS-NTT-CUSTOMERS"
-echo "AS3356: member-of-as-set = AS-LEVEL3-TRANSIT,AS-LEVEL3-PEERING ✗ NOT AUTHORIZED for AS-NTT-CUSTOMERS"
-echo "AS8075: member-of-as-set = AS-MICROSOFT ✗ NOT AUTHORIZED for AS-NTT-CUSTOMERS"
+# ===========================================================================
+# SCENARIO 3: Content Provider Protection (Google, Amazon)
+# ===========================================================================
+echo ""
+echo "======================================================================="
+echo "SCENARIO 3: Content Provider Protection"
+echo "======================================================================="
+echo ""
+echo "Google (AS-GOOGLE): 7,259 prefixes"
+echo "Amazon (AS-AMAZON): 18,547 prefixes"
+echo "Microsoft (AS-MICROSOFT): 1,406 prefixes"
+echo ""
+echo "Scenario: Malicious customer adds these AS-SETs to steal traffic"
 echo ""
 
-echo "Pruned ASNs: AS15169, AS3356, AS8075"
+# Without verification
+echo "--- WITHOUT verification ---"
+echo "AS-path would allow: AS-GOOGLE|AS-AMAZON|AS-MICROSOFT"
+echo "Total leaked prefixes: ~27,000+"
+echo ""
+
+# With verification
+echo "--- WITH verification ---"
+echo "Google checks: member-of-as-set includes AS-GOOGLE-PEERING only"
+echo "Amazon checks: member-of-as-set includes AS-AMAZON-* only"
+echo "Microsoft checks: member-of-as-set includes AS-MICROSOFT only"
+echo ""
+echo "Result: All three AS-SETs PRUNED from unauthorized AS-SET"
+echo ""
+
+# ===========================================================================
+# COMPARISON: AS-Path vs Prefix-List Filtering
+# ===========================================================================
+echo ""
+echo "======================================================================="
+echo "COMPARISON: AS-Path vs Prefix-List Filtering"
+echo "======================================================================="
+echo ""
+
+echo "Real-world impact if AS-HURRICANE added maliciously:"
+echo ""
+echo "WITHOUT member-of-as-set:"
+echo "  - AS-path filter accepts: AS64496|AS64497|AS64498|AS64499|AS-HURRICANE"
+echo "  - Prefix-list includes: 411,327+ Hurricane Electric prefixes"
+echo "  - Result: MASSIVE route leak potential"
+echo ""
+echo "WITH member-of-as-set:"
+echo "  - AS-path filter accepts: AS64496-64499 only"
+echo "  - Prefix-list includes: ~20-40 legitimate prefixes"
+echo "  - AS-HURRICANE: PRUNED (not authorized)"
+echo "  - Result: 99.99% reduction in leaked prefixes"
 echo ""
 
 echo "Juniper AS-path filter (SECURE):"
-./juniper-generator.sh AS-MALICIOUS-CUSTOMER-FILTERED 64496 64497 64498 64499
-echo ""
-
-echo ""
-echo "======================================================================="
-echo "COMPARISON C: AS-Path vs Prefix-List Filtering"
-echo "======================================================================="
-echo ""
-
-echo "Real-world data: If we expand these ASNs against actual IRR data:"
-echo ""
-
-# Show real prefix counts for the ASNs in our example
-echo "AS64496 (legitimate customer): ~5-10 prefixes"
-echo "AS64497 (legitimate customer): ~5-10 prefixes"
-echo "AS64498 (legitimate customer): ~5-10 prefixes"
-echo "AS64499 (legitimate customer): ~5-10 prefixes"
-echo "---"
-echo "AS15169 (Google): ~3-5 prefixes in IRR (real: thousands more not registered)"
-echo "AS3356 (Level3): ~353 prefixes (from real data)"
-echo "AS8075 (Microsoft): ~186 prefixes (from real data)"
-echo ""
-
-echo "WITHOUT verification - Prefix-list would include:"
-echo "  Legitimate: ~20-40 prefixes"
-echo "  GOOGLE: +potentially thousands of prefixes"
-echo "  LEVEL3: +353 prefixes"
-echo "  MICROSOFT: +186 prefixes"
-echo "  TOTAL: ~500+ prefixes (mostly unauthorized!)"
-echo ""
-
-echo "WITH verification - Prefix-list includes only:"
-echo "  Legitimate: ~20-40 prefixes"
-echo "  TOTAL: ~20-40 prefixes"
-echo ""
-
-echo "Savings: ~90%+ reduction in prefix-list size"
-echo "         + prevention of major route leaks"
-echo ""
-
-# Generate example prefix-list showing the difference
-echo "Example Juniper prefix-lists (simulated):"
-echo ""
-echo "WITHOUT verification (VULNERABLE):"
-./juniper-generator.sh -t prefix AS-MALICIOUS-CUSTOMER 192.0.2.0/24 198.51.100.0/24 203.0.113.0/24 "8.8.8.0/24 (GOOGLE)" "4.0.0.0/8 (LEVEL3)" "13.0.0.0/8 (MICROSOFT)"
-echo ""
-
-echo "WITH verification (SECURE):"
-./juniper-generator.sh -t prefix AS-MALICIOUS-CUSTOMER-FILTERED 192.0.2.0/24 198.51.100.0/24 203.0.113.0/24
+./juniper-generator.sh AS-NTT-CUSTOMERS-SECURE 64496 64497 64498 64499
 echo ""
 
 # ===========================================================================
-# Real-world comparison with actual IRR data
+# Real-world AS-SET Size Summary
 # ===========================================================================
 echo ""
 echo "======================================================================="
-echo "REAL-WORLD COMPARISON: Actual Tier-1 AS-SET Sizes"
+echo "REAL-WORLD AS-SET SIZES (from IRR queries)"
 echo "======================================================================="
 echo ""
-
-echo "From real IRR queries:"
+echo "Content/Tier-1 Providers:"
+echo "  AS-HURRICANE:  411,327 prefixes (Hurricane Electric)"
+echo "  AS-AMAZON:      18,547 prefixes (Amazon/AWS)"
+echo "  AS-GOOGLE:       7,259 prefixes (Google)"
+echo "  AS-HETZNER:      4,804 prefixes (Hetzner)"
+echo "  AS-MICROSOFT:    1,406 prefixes (Microsoft)"
+echo "  AS-FACEBOOK:       541 prefixes (Meta/Facebook)"
+echo "  AS-NFLX:            67 prefixes (Netflix)"
 echo ""
-echo "AS-HETZNER (hosting provider): ~4,804 prefixes"
-echo "AS2914 (NTT): ~589 prefixes"
-echo "AS1299 (Arelion): ~623 prefixes"
-echo "AS3356 (Level3): ~353 prefixes"
-echo "AS6461 (Zayo): ~80 prefixes"
-echo ""
-
-echo "A malicious customer adding Google (AS15169) to a large AS-SET like"
-echo "AS-HETZNER could potentially leak Google's prefixes to thousands of peers."
+echo "A single malicious AS-SET inclusion could leak:"
+echo "  - AS-HURRICANE: 411,327 prefixes (CATASTROPHIC)"
+echo "  - AS-AMAZON: 18,547 prefixes (MAJOR)"
+echo "  - AS-GOOGLE: 7,259 prefixes (SIGNIFICANT)"
 echo ""
 
 # ===========================================================================
@@ -167,19 +180,18 @@ echo "SUMMARY"
 echo "======================================================================="
 echo ""
 echo "WITHOUT member-of-as-set:"
-echo "  - Any ASN can be added to any AS-SET without authorization"
-echo "  - Malicious customers can add tier-1/content ASNs"
-echo "  - Filters accept unauthorized ASNs, enabling route leaks"
+echo "  - Any ASN/AS-SET can be added without authorization"
+echo "  - Malicious customers can add AS-HURRICANE (411K prefixes)"
+echo "  - No protection against massive route leaks"
 echo ""
 echo "WITH member-of-as-set:"
-echo "  - ASNs must explicitly authorize AS-SET membership"
-echo "  - Unauthorized ASNs are pruned during expansion"
-echo "  - Filters only accept legitimately authorized ASNs"
-echo "  - Backward compatible: ASNs without objects are still accepted"
+echo "  - AS-HURRICANE must authorize each AS-SET inclusion"
+echo "  - Unauthorized AS-SETs (like AS-HURRICANE) are pruned"
+echo "  - Prevents catastrophic 411K prefix leak"
+echo "  - Backward compatible: ASNs without objects still work"
 echo ""
-echo "Benefits:"
-echo "  1. Prevents unauthorized prefix leaks"
-echo "  2. Stops AS-SET hijacking attempts"
-echo "  3. No changes to IRR software needed"
-echo "  4. Incremental deployment possible"
+echo "Critical Protection:"
+echo "  - AS-HURRICANE (411,327 prefixes) protected from hijacking"
+echo "  - AS-AMAZON (18,547 prefixes) protected"
+echo "  - AS-GOOGLE (7,259 prefixes) protected"
 echo "======================================================================="

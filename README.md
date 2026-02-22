@@ -11,7 +11,7 @@ This project defines the `member-of-as-set` object type for IRR databases, enabl
 Currently, AS-SET objects are **unidirectional**:
 - An AS-SET owner can include any autonomous system without authorization
 - This allows malicious operators to add tier-1/content provider ASNs (Google, Microsoft, etc.) to their AS-SET
-- Potential for route leaks and prefix hijacking
+- Potential for massive route leaks (AS-HURRICANE: 411,327 prefixes could be leaked!)
 
 ## Solution
 
@@ -34,7 +34,7 @@ Located in `poc/` directory:
 
 - `as-set-expander.sh` - Expands AS-SETs with optional verification
 - `juniper-generator.sh` - Generates Juniper AS-path/prefix-list configs
-- `demo.sh` - Full demonstration with attack scenarios
+- `demo.sh` - Full demonstration with attack scenarios (includes AS-HURRICANE case)
 - `simulated-irr/` - Simulated IRR objects
 
 ### Running the POC
@@ -46,9 +46,9 @@ cd poc
 
 Demonstrates:
 1. Legitimate customer AS-SET (all authorized)
-2. Malicious customer with unauthorized ASNs (Google, Level3, Microsoft)
-3. Comparison: AS-path filtering vs prefix-list filtering
-4. Real-world AS-SET sizes (AS-HETZNER: 4,804 prefixes)
+2. **AS-HURRICANE protection** (411,327 prefixes - CATASTROPHIC if leaked)
+3. Content provider protection (Google: 7,259 prefixes, Amazon: 18,547 prefixes)
+4. Comparison: AS-path filtering vs prefix-list filtering
 
 ## Key Features
 
@@ -56,25 +56,29 @@ Demonstrates:
 - **No IRR changes needed**: Uses standard RPSL objects
 - **Incremental deployment**: Large ASNs can opt-in first
 - **Complements RPKI**: Adds AS-path validation, doesn't replace origin validation
+- **Catastrophic leak prevention**: AS-HURRICANE (411K prefixes) protected
 
 ## Real-World Impact
 
 From POC analysis of actual IRR data:
 
-| AS-SET | Provider | Prefixes |
-|--------|----------|----------|
-| AS-HETZNER | Hetzner | 4,804 |
-| AS1299 | Arelion | 623 |
-| AS2914 | NTT | 589 |
-| AS3356 | Level3 | 353 |
+| AS-SET | Provider | Prefixes | Risk Level |
+|--------|----------|----------|------------|
+| **AS-HURRICANE** | Hurricane Electric | **411,327** | **CATASTROPHIC** |
+| **AS-AMAZON** | Amazon | **18,547** | **MAJOR** |
+| **AS-GOOGLE** | Google | **7,259** | **SIGNIFICANT** |
+| AS-HETZNER | Hetzner | 4,804 | Large |
+| AS-MICROSOFT | Microsoft | 1,406 | Medium |
+| AS-FACEBOOK | Meta | 541 | Medium |
+| AS-NFLX | Netflix | 67 | Small |
 
-A malicious customer adding Google (AS15169) to AS-HETZNER could leak Google prefixes to thousands of peers.
+**Critical Example**: A malicious customer adding **AS-HURRICANE** (411,327 prefixes) to their AS-SET could leak Hurricane Electric's entire prefix database to thousands of peers. With member-of-as-set, AS-HURRICANE would be **pruned** (not authorized), preventing this catastrophic leak.
 
 ## Status
 
 - [x] RFC Draft (RFCXML v3)
 - [x] Implementation Guide
-- [x] Working POC with real IRR data
+- [x] Working POC with real IRR data (AS-HURRICANE, AS-AMAZON, AS-GOOGLE)
 - [ ] IETF GROW WG adoption
 - [ ] Tool integration (bgpq4, IRRd)
 

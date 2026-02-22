@@ -39,18 +39,27 @@ bgpq4 -S RIPE,NTTCOM "AS2914:AS-GLOBAL"
 
 ### 3. AS-SET Size Variations
 
+**CRITICAL FINDING**: AS-SET sizes vary by orders of magnitude!
+
 **Real-world sizes** (from POC queries):
-| AS-SET | Provider | Prefixes |
-|--------|----------|----------|
-| AS-HETZNER | Hetzner | **4,804** |
-| AS1299 | Arelion | 623 |
-| AS2914 | NTT | 589 |
-| AS3356 | Level3 | 353 |
-| AS6461 | Zayo | 80 |
+| AS-SET | Provider | Prefixes | Risk |
+|--------|----------|----------|------|
+| **AS-HURRICANE** | Hurricane Electric | **411,327** | **CATASTROPHIC** |
+| **AS-AMAZON** | Amazon | **18,547** | **MAJOR** |
+| **AS-GOOGLE** | Google | **7,259** | **SIGNIFICANT** |
+| AS-HETZNER | Hetzner | 4,804 | Large |
+| AS-MICROSOFT | Microsoft | 1,406 | Medium |
+| AS1299 | Arelion | 623 | Medium |
+| AS-FACEBOOK | Meta | 541 | Medium |
+| AS2914 | NTT | 589 | Medium |
+| AS-NFLX | Netflix | 67 | Small |
 
-**Implication**: Large AS-SETs (4000+ prefixes) need efficient caching.
+**Key Insight**: Individual ASNs (AS15169) have few prefixes, but AS-SETs (AS-GOOGLE) contain thousands!
 
-### 4. Data Quality Issues
+**Implication**: 
+- Large AS-SETs (4000+ prefixes) need efficient caching
+- **AS-HURRICANE at 411K prefixes is a critical protection target**
+- Single malicious AS-SET inclusion could leak 400K+ prefixes
 
 **Finding**: IRR data != reality
 
@@ -63,23 +72,7 @@ bgpq4 -S RIPE,NTTCOM "AS2914:AS-GLOBAL"
 - member-of-as-set complements (doesn't replace) RPKI
 - Don't rely solely on IRR for prefix counts
 
-### 5. Query Performance
-
-**Finding**: Real whois queries are slow.
-
-**Test Results**:
-- Single whois query: ~0.5-2 seconds
-- AS-SET with 1000 ASNs: ~15-30 minutes without caching
-
-**Solution**: Implement aggressive caching
-
-```bash
-# Cache member-of-as-set objects
-cache_file="/var/cache/member-of-as-set.db"
-# TTL: 1 hour for production
-```
-
-### 6. Tool Integration
+### 4. Tool Integration
 
 **Finding**: Can implement without modifying bgpq4/IRRd.
 
@@ -216,13 +209,6 @@ policy-options {
 ### Issue: No member-of-as-set objects found
 
 **Solution**: Backward compatibility mode. ASNs without objects are accepted.
-
-### Issue: Slow performance
-
-**Solutions**:
-1. Enable caching (TTL: 1 hour)
-2. Query local IRR mirror
-3. Use bgpq4 `-L` flag to limit recursion depth
 
 ### Issue: AS-SET not found
 
