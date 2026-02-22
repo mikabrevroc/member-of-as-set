@@ -86,7 +86,7 @@ A malicious customer adding Google (AS15169) to AS-HETZNER could leak Google pre
 
 ## Authors
 
-- Saku Carbonara (NTT Communications Corporation)
+- Saku Ytti (NTT Communications Corporation)
 - Based on discussions in #networker IRC community
 
 ## License

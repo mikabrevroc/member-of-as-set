@@ -2,7 +2,7 @@
 
 
 
-Global Routing Operations                                   S. Carbonara
+Global Routing Operations                                        S. Ytti
 Internet-Draft                            NTT Communications Corporation
 Intended status: Standards Track                        22 February 2026
 Expires: 26 August 2026
@@ -53,7 +53,7 @@ Copyright Notice
 
 
 
-Carbonara                Expires 26 August 2026                 [Page 1]
+Ytti                     Expires 26 August 2026                 [Page 1]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
@@ -109,7 +109,7 @@ Table of Contents
 
 
 
-Carbonara                Expires 26 August 2026                 [Page 2]
+Ytti                     Expires 26 August 2026                 [Page 2]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
@@ -165,7 +165,7 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
 
 
-Carbonara                Expires 26 August 2026                 [Page 3]
+Ytti                     Expires 26 August 2026                 [Page 3]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
@@ -221,7 +221,7 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
 
 
-Carbonara                Expires 26 August 2026                 [Page 4]
+Ytti                     Expires 26 August 2026                 [Page 4]
 
 Internet-Draft              Member-of-AS-SET               February 2026
 
@@ -264,9 +264,9 @@ Acknowledgments
 
 Author's Address
 
-   Saku Carbonara
+   Saku Ytti
    NTT Communications Corporation
-   Email: saku@carbonara.cy
+   Email: saku@ytti.cy
 
 
 
@@ -277,4 +277,4 @@ Author's Address
 
 
 
-Carbonara                Expires 26 August 2026                 [Page 5]
+Ytti                     Expires 26 August 2026                 [Page 5]
