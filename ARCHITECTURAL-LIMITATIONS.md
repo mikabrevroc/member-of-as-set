@@ -140,6 +140,55 @@ Use RPKI to sign member-of-as-set assertions:
 - Requires RPKI deployment
 - More complex
 
+### Solution 5: Do-Not-Inherit Flag
+
+Add a `do-not-inherit` or `opaque` flag to AS-SET objects:
+
+```
+as-set: AS1299:AS-TWELVE99
+members: AS1, AS2, AS3
+do-not-inherit: yes
+mnt-by: MAINT-ARELION
+```
+
+When `do-not-inherit: yes` is set:
+- The AS-SET can be included in other AS-SETs
+- But its members are NOT transitively inherited
+- Expansion stops at the AS-SET boundary
+
+**Example:**
+```
+AS-MALICIOUS members: AS1299:AS-TWELVE99
+AS1299:AS-TWELVE99 do-not-inherit: yes, members: AS1, AS2, Google
+
+Result: AS-MALICIOUS expansion = {AS1299:AS-TWELVE99}
+        NOT {AS1, AS2, Google}
+```
+
+**Pros:**
+- AS-SET owner controls inheritance behavior
+- Protects downstream ASNs without requiring their participation
+- Simple to understand and implement
+- Backward compatible (default is inherit)
+
+**Cons:**
+- Requires AS-SET owners to update their objects
+- Changes traditional AS-SET semantics
+- May break existing uses that depend on inheritance
+- Tools must be updated to respect the flag
+
+**Use Case:**
+Tier-1 providers can protect their customer AS-SETs:
+```
+as-set: AS1299:AS-TWELVE99
+do-not-inherit: yes
+remarks: Customer AS-SET - members not inheritable
+mnt-by: MAINT-ARELION
+```
+
+This prevents malicious AS-SETs from "stealing" customers by
+including AS1299:AS-TWELVE99.
+
 ## Recommendation
 
 The current draft should **acknowledge this limitation** and **document**
