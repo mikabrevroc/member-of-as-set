@@ -140,8 +140,8 @@
     <section anchor="object">
       <name>The member-of-as-set Object</name>
       <t>
-        The member-of-as-set object is an RPSL object that allows an
-        autonomous system or AS-SET to declare membership in AS-SETs. This serves
+        The member-of-as-set object is an RPSL object that allows autonomous
+        systems and AS-SETs to declare membership in AS-SETs. This serves
         as authorization for inclusion.
       </t>
       
@@ -165,10 +165,10 @@ changed            &lt;email-address&gt; &lt;date&gt;     mandatory, multi-value
 source             &lt;registry-name&gt;            mandatory, single-valued
         </sourcecode>
         <t>
-          The class key is the member-of-as-set attribute containing either
-          an autonomous system number or an AS-SET name. The combination of
-          (object class, class key) uniquely identifies a member-of-as-set
-          object within an IRR database.
+          The class key is the combination of all values in the member-of-as-set
+          attribute. Each entry is either an autonomous system number or an AS-SET
+          name. The combination of (object class, all member-of-as-set values)
+          uniquely identifies a member-of-as-set object within an IRR database.
         </t>
       </section>
 
@@ -178,24 +178,25 @@ source             &lt;registry-name&gt;            mandatory, single-valued
         <section anchor="attr-member-of-as-set">
           <name>The member-of-as-set Attribute</name>
           <t>
-            The member-of-as-set attribute specifies the identifier that this
+            The member-of-as-set attribute specifies the identifiers that this
             object describes. It serves as the primary key for the object.
-            The attribute <bcp14>MAY</bcp14> contain either an autonomous system
-            number or an AS-SET name, allowing both individual ASNs and AS-SETs
+            The attribute <bcp14>MAY</bcp14> contain one or more autonomous system
+            numbers and/or AS-SET names, allowing both individual ASNs and AS-SETs
             themselves to declare membership authorization:
           </t>
           <ul spacing="normal">
-            <li>If the value is an AS number (e.g., AS3245), the object
+            <li>If a value is an AS number (e.g., AS3245), the object
             authorizes that ASN's inclusion in the listed AS-SETs</li>
-            <li>If the value is an AS-SET name (e.g., AS-HURRICANE), the object
+            <li>If a value is an AS-SET name (e.g., AS-HURRICANE), the object
             authorizes that AS-SET's inclusion as a member of other AS-SETs</li>
           </ul>
           <sourcecode type="text">
 member-of-as-set: AS3245
+member-of-as-set: AS64501
 member-of-as-set: AS-HURRICANE
           </sourcecode>
           <t>
-            The value <bcp14>MUST</bcp14> be either:
+            Each value <bcp14>MUST</bcp14> be either:
           </t>
           <ul spacing="normal">
             <li>A valid autonomous system number formatted according to
@@ -211,8 +212,8 @@ member-of-as-set: AS-HURRICANE
           <name>The member-of Attribute</name>
           <t>
             The member-of attribute lists the AS-SET objects in which the
-            autonomous system or AS-SET declares membership. Each value authorizes
-            inclusion in the specified AS-SET.
+            autonomous systems and AS-SETs declare membership. Each value
+            authorizes inclusion in the specified AS-SET.
           </t>
           <sourcecode type="text">
 member-of: AS3245:LOCAL-PEERING
@@ -255,8 +256,9 @@ member-of: AS3245:CUSTOMERS
       <section anchor="semantics">
         <name>Object Semantics</name>
         <t>
-          By including an AS-SET name in the member-of attribute, an autonomous
-          system or AS-SET authorizes its inclusion in expansions of that AS-SET.
+          By including an AS-SET name in the member-of attribute, the
+          autonomous systems and AS-SETs listed in member-of-as-set authorize
+          their inclusion in expansions of that AS-SET.
         </t>
         <t>
           If a member-of-as-set object exists for an autonomous system or AS-SET,
@@ -319,6 +321,22 @@ remarks:          NOT in customer or regional AS-SETs
 changed:          ops@he.net 20260222
 source:           RADB
         </sourcecode>
+        <t>
+          Example with multiple ASNs (enterprise with multiple AS numbers):
+        </t>
+        <sourcecode type="text">
+member-of-as-set: AS64501
+member-of-as-set: AS64502
+member-of-as-set: AS64503
+member-of:        AS-ENTERPRISE-TRANSIT
+member-of:        AS-GLOBAL-PEERING
+mnt-by:           MNTR-ENTERPRISE
+admin-c:          ENT1-RIPE
+tech-c:           ENT2-RIPE
+remarks:          Enterprise authorizes all ASNs in transit and peering AS-SETs
+changed:          admin@enterprise.com 20260222
+source:           RIPE
+        </sourcecode>
       </section>
     </section>
 
@@ -354,10 +372,10 @@ whois -h whois.ripe.net "AS3245"
         <li>For each autonomous system AS:</li>
       </ol>
       <t>
-        Query the IRR for a member-of-as-set object for AS. If none exists,
-        include AS (backward compatibility). If a member-of-as-set object
-        exists, check if S appears in the member-of attribute. Include AS
-        if yes, prune if no.
+        Query the IRR for a member-of-as-set object where AS appears in the
+        member-of-as-set attribute. If none exists, include AS (backward
+        compatibility). If a member-of-as-set object exists, check if S appears
+        in the member-of attribute. Include AS if yes, prune if no.
       </t>
       <t>
         Finally, return the filtered set.

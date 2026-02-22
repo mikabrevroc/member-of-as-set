@@ -79,17 +79,17 @@ Table of Contents
      4.3.  Object Semantics  . . . . . . . . . . . . . . . . . . . .   6
      4.4.  Example Objects . . . . . . . . . . . . . . . . . . . . .   6
    5.  Query and Lookup  . . . . . . . . . . . . . . . . . . . . . .   7
-   6.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   7
+   6.  Verification Mechanism  . . . . . . . . . . . . . . . . . . .   8
      6.1.  Detailed Verification Algorithm . . . . . . . . . . . . .   8
      6.2.  Implementation in Tools . . . . . . . . . . . . . . . . .   8
-   7.  Deployment Considerations . . . . . . . . . . . . . . . . . .   8
+   7.  Deployment Considerations . . . . . . . . . . . . . . . . . .   9
    8.  Security Considerations . . . . . . . . . . . . . . . . . . .   9
-   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   9
+   9.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  10
    10. References  . . . . . . . . . . . . . . . . . . . . . . . . .  10
      10.1.  Normative References . . . . . . . . . . . . . . . . . .  10
      10.2.  Informative References . . . . . . . . . . . . . . . . .  10
-   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  10
-   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  10
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  11
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  11
 
 1.  Introduction
 
@@ -182,9 +182,9 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
 4.  The member-of-as-set Object
 
-   The member-of-as-set object is an RPSL object that allows an
-   autonomous system or AS-SET to declare membership in AS-SETs.  This
-   serves as authorization for inclusion.
+   The member-of-as-set object is an RPSL object that allows autonomous
+   systems and AS-SETs to declare membership in AS-SETs.  This serves as
+   authorization for inclusion.
 
 4.1.  Object Template
 
@@ -203,21 +203,21 @@ Internet-Draft              Member-of-AS-SET               February 2026
    changed            <email-address> <date>     mandatory, multi-valued
    source             <registry-name>            mandatory, single-valued
 
-   The class key is the member-of-as-set attribute containing either an
-   autonomous system number or an AS-SET name.  The combination of
-   (object class, class key) uniquely identifies a member-of-as-set
-   object within an IRR database.
+   The class key is the combination of all values in the member-of-as-
+   set attribute.  Each entry is either an autonomous system number or
+   an AS-SET name.  The combination of (object class, all member-of-as-
+   set values) uniquely identifies a member-of-as-set object within an
+   IRR database.
 
 4.2.  Attribute Definitions
 
 4.2.1.  The member-of-as-set Attribute
 
-   The member-of-as-set attribute specifies the identifier that this
+   The member-of-as-set attribute specifies the identifiers that this
    object describes.  It serves as the primary key for the object.  The
-   attribute MAY contain either an autonomous system number or an AS-SET
-   name, allowing both individual ASNs and AS-SETs themselves to declare
-   membership authorization:
-
+   attribute MAY contain one or more autonomous system numbers and/or
+   AS-SET names, allowing both individual ASNs and AS-SETs themselves to
+   declare membership authorization:
 
 
 
@@ -226,16 +226,17 @@ Ytti                     Expires 26 August 2026                 [Page 4]
 Internet-Draft              Member-of-AS-SET               February 2026
 
 
-   *  If the value is an AS number (e.g., AS3245), the object authorizes
+   *  If a value is an AS number (e.g., AS3245), the object authorizes
       that ASN's inclusion in the listed AS-SETs
 
-   *  If the value is an AS-SET name (e.g., AS-HURRICANE), the object
+   *  If a value is an AS-SET name (e.g., AS-HURRICANE), the object
       authorizes that AS-SET's inclusion as a member of other AS-SETs
 
    member-of-as-set: AS3245
+   member-of-as-set: AS64501
    member-of-as-set: AS-HURRICANE
 
-   The value MUST be either:
+   Each value MUST be either:
 
    *  A valid autonomous system number formatted according to [RFC2622],
       using the AS<number> notation (e.g., AS3245, AS6939, AS65001); or
@@ -246,7 +247,7 @@ Internet-Draft              Member-of-AS-SET               February 2026
 4.2.2.  The member-of Attribute
 
    The member-of attribute lists the AS-SET objects in which the
-   autonomous system or AS-SET declares membership.  Each value
+   autonomous systems and AS-SETs declare membership.  Each value
    authorizes inclusion in the specified AS-SET.
 
    member-of: AS3245:LOCAL-PEERING
@@ -276,7 +277,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
 
 
-
 Ytti                     Expires 26 August 2026                 [Page 5]
 
 Internet-Draft              Member-of-AS-SET               February 2026
@@ -289,9 +289,9 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
 4.3.  Object Semantics
 
-   By including an AS-SET name in the member-of attribute, an autonomous
-   system or AS-SET authorizes its inclusion in expansions of that AS-
-   SET.
+   By including an AS-SET name in the member-of attribute, the
+   autonomous systems and AS-SETs listed in member-of-as-set authorize
+   their inclusion in expansions of that AS-SET.
 
    If a member-of-as-set object exists for an autonomous system or AS-
    SET, verification tools SHOULD use the complete list of AS-SET names
@@ -359,6 +359,20 @@ Internet-Draft              Member-of-AS-SET               February 2026
    changed:          ops@he.net 20260222
    source:           RADB
 
+   Example with multiple ASNs (enterprise with multiple AS numbers):
+
+   member-of-as-set: AS64501
+   member-of-as-set: AS64502
+   member-of-as-set: AS64503
+   member-of:        AS-ENTERPRISE-TRANSIT
+   member-of:        AS-GLOBAL-PEERING
+   mnt-by:           MNTR-ENTERPRISE
+   admin-c:          ENT1-RIPE
+   tech-c:           ENT2-RIPE
+   remarks:          Enterprise authorizes all ASNs in transit and peering AS-SETs
+   changed:          admin@enterprise.com 20260222
+   source:           RIPE
+
 5.  Query and Lookup
 
    The member-of-as-set object SHOULD be queried using class-qualified
@@ -371,6 +385,15 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    whois -h whois.ripe.net "AS3245"
 
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 7]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
    IRR software SHOULD support class-qualified queries as defined in
    [RFC2622].
 
@@ -382,17 +405,10 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    2.  For each autonomous system AS:
 
-   Query the IRR for a member-of-as-set object for AS.  If none exists,
-   include AS (backward compatibility).  If a member-of-as-set object
-   exists, check if S appears in the member-of attribute.  Include AS if
-   yes, prune if no.
-
-
-
-Ytti                     Expires 26 August 2026                 [Page 7]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
+   Query the IRR for a member-of-as-set object where AS appears in the
+   member-of-as-set attribute.  If none exists, include AS (backward
+   compatibility).  If a member-of-as-set object exists, check if S
+   appears in the member-of attribute.  Include AS if yes, prune if no.
 
    Finally, return the filtered set.
 
@@ -427,6 +443,13 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    *  Provide enable/disable options for verification
 
+
+
+Ytti                     Expires 26 August 2026                 [Page 8]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
    *  Default to disabled to maintain backward compatibility
 
    *  Log pruned systems with reasons
@@ -442,13 +465,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
    modification; IRR software requires object type registration.
 
    Deployment proceeds incrementally:
-
-
-
-Ytti                     Expires 26 August 2026                 [Page 8]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
 
    1.  IRR software adds support for the new object type
 
@@ -479,6 +495,17 @@ Internet-Draft              Member-of-AS-SET               February 2026
    can declare AS-SET membership, unlike the existing mbrs-by-ref
    mechanism which relies on maintainer trust relationships.
 
+
+
+
+
+
+
+Ytti                     Expires 26 August 2026                 [Page 9]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
 9.  IANA Considerations
 
    Per [RFC2622] Section 10, this document extends RPSL with a new
@@ -494,17 +521,6 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
    IANA is requested to register the following attributes in the RPSL
    Attributes registry:
-
-
-
-
-
-
-
-Ytti                     Expires 26 August 2026                 [Page 9]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
 
    Attribute: member-of-as-set
    Object Types: member-of-as-set
@@ -539,6 +555,13 @@ Internet-Draft              Member-of-AS-SET               February 2026
 
 10.2.  Informative References
 
+
+
+Ytti                     Expires 26 August 2026                [Page 10]
+
+Internet-Draft              Member-of-AS-SET               February 2026
+
+
    [RFC6480]  Lepinski, M., "RPKI Infrastructure", RFC 6480, 2012,
               <https://www.rfc-editor.org/info/rfc6480>.
 
@@ -554,30 +577,7 @@ Author's Address
 
    Saku Ytti
    NTT Communications Corporation
-
-
-
-Ytti                     Expires 26 August 2026                [Page 10]
-
-Internet-Draft              Member-of-AS-SET               February 2026
-
-
    Email: saku@ytti.cy
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
