@@ -1349,10 +1349,7 @@ li > p:last-of-type:only-child {
                     <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-the-member-of-as-set-attrib" class="internal xref">The member-of-as-set Attribute</a></p>
 </li>
                   <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
-                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-the-member-of-attribute" class="internal xref">The member-of Attribute</a></p>
-</li>
-                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.3">
-                    <p id="section-toc.1-1.4.2.2.2.3.1"><a href="#section-4.2.3" class="auto internal xref">4.2.3</a>.  <a href="#name-other-attributes" class="internal xref">Other Attributes</a></p>
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-other-attributes" class="internal xref">Other Attributes</a></p>
 </li>
                 </ul>
 </li>
@@ -1532,7 +1529,6 @@ li > p:last-of-type:only-child {
 Attribute          Value                      Type
 member-of-as-set   list of &lt;as-numbers&gt; or     mandatory, multi-valued,
                    &lt;as-set-names&gt;             class key
-member-of          list of &lt;as-set-names&gt;     mandatory, multi-valued
 mnt-by             list of &lt;mntner-names&gt;     mandatory, multi-valued
 admin-c            &lt;nic-handle&gt;               mandatory, multi-valued
 tech-c             &lt;nic-handle&gt;               mandatory, multi-valued
@@ -1594,34 +1590,14 @@ member-of-as-set: AS-HURRICANE
           </ul>
 </section>
 </div>
-<div id="attr-member-of">
+<div id="attr-other">
 <section id="section-4.2.2">
-          <h4 id="name-the-member-of-attribute">
-<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-the-member-of-attribute" class="section-name selfRef">The member-of Attribute</a>
+          <h4 id="name-other-attributes">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-other-attributes" class="section-name selfRef">Other Attributes</a>
           </h4>
 <p id="section-4.2.2-1">
-            The member-of attribute lists the AS-SET objects in which the
-            autonomous systems and AS-SETs declare membership. Each value
-            authorizes inclusion in the specified AS-SET.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
-<div class="lang-text sourcecode" id="section-4.2.2-2">
-<pre>
-member-of: AS3245:LOCAL-PEERING
-member-of: AS3245:CUSTOMERS
-</pre><a href="#section-4.2.2-2" class="pilcrow">¶</a>
-</div>
-<p id="section-4.2.2-3">
-            AS-SET names in the member-of attribute <span class="bcp14">MUST</span> follow
-            the naming conventions defined in <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span> Section 5.<a href="#section-4.2.2-3" class="pilcrow">¶</a></p>
-</section>
-</div>
-<div id="attr-other">
-<section id="section-4.2.3">
-          <h4 id="name-other-attributes">
-<a href="#section-4.2.3" class="section-number selfRef">4.2.3. </a><a href="#name-other-attributes" class="section-name selfRef">Other Attributes</a>
-          </h4>
-<p id="section-4.2.3-1">
             The admin-c, tech-c, mnt-by, remarks, notify, changed, and source
-            attributes are used as defined in <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span>.<a href="#section-4.2.3-1" class="pilcrow">¶</a></p>
+            attributes are used as defined in <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span>.<a href="#section-4.2.2-1" class="pilcrow">¶</a></p>
 </section>
 </div>
 </section>
@@ -1632,18 +1608,22 @@ member-of: AS3245:CUSTOMERS
 <a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-object-semantics" class="section-name selfRef">Object Semantics</a>
         </h3>
 <p id="section-4.3-1">
-          By including an AS-SET name in the member-of attribute, the
-          autonomous systems and AS-SETs listed in member-of-as-set authorize
-          their inclusion in expansions of that AS-SET.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+          The member-of-as-set object provides authorization for inclusion
+          in AS-SET expansions. When an AS or AS-SET is listed in the
+          member-of-as-set attribute of a member-of-as-set object, and that
+          object contains a reference to a specific AS-SET in its member-of
+          attribute (as defined in <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span>), the AS or AS-SET
+          authorizes its inclusion in that AS-SET.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
 <p id="section-4.3-2">
           If a member-of-as-set object exists for an autonomous system or AS-SET,
-          the member-of attribute contains an <span class="bcp14">exhaustive whitelist</span>
-          of AS-SETs in which the system or AS-SET authorizes inclusion.
-          Verification tools <span class="bcp14">MUST</span> only include the system or AS-SET
-          in expansions of AS-SETs explicitly listed in the member-of attribute.
-          If an AS-SET expansion includes the system or AS-SET but that AS-SET is
-          <span class="bcp14">NOT</span> listed in the member-of attribute, verification
-          tools <span class="bcp14">MUST</span> prune the system or AS-SET from the expansion.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
+          verification tools <span class="bcp14">SHOULD</span> examine the member-of attribute
+          (as defined in <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span>) to determine AS-SET membership
+          authorization. The member-of attribute in this context serves as an
+          exhaustive whitelist of AS-SETs in which the system or AS-SET authorizes
+          inclusion. If an AS-SET expansion includes the system or AS-SET but that
+          AS-SET is <span class="bcp14">NOT</span> listed in the member-of attribute,
+          verification tools <span class="bcp14">MUST</span> prune the system or AS-SET from
+          the expansion.<a href="#section-4.3-2" class="pilcrow">¶</a></p>
 <p id="section-4.3-3">
           If no member-of-as-set object exists for an autonomous system or AS-SET,
           verification tools <span class="bcp14">MUST</span> include the system or AS-SET
@@ -1666,11 +1646,10 @@ member-of: AS3245:CUSTOMERS
 <div class="lang-text sourcecode" id="section-4.4-2">
 <pre>
 member-of-as-set: AS3245
-member-of:        AS3245:LOCAL-PEERING
 mnt-by:           MNTR-SOFIA-UNI
 admin-c:          DK58
 tech-c:           OPS4-RIPE
-remarks:          Sofia University only authorizes local peering AS-SET
+remarks:          Sofia University creates member-of-as-set object
 remarks:          NOT Hurricane Electric or other global AS-SETs
 changed:          admin@sofia-uni.bg 20260222
 source:           RIPE
@@ -1681,7 +1660,6 @@ source:           RIPE
 <div class="lang-text sourcecode" id="section-4.4-4">
 <pre>
 member-of-as-set: AS6939
-member-of:        AS-HURRICANE
 mnt-by:           MAINT-AS6939
 admin-c:          HE-ADMIN
 tech-c:           HE-OPS
@@ -1694,11 +1672,10 @@ source:           RADB
 <div class="lang-text sourcecode" id="section-4.4-6">
 <pre>
 member-of-as-set: AS-HURRICANE
-member-of:        AS-GLOBAL-TRANSIT
 mnt-by:           MAINT-AS6939
 admin-c:          HE-ADMIN
 tech-c:           HE-OPS
-remarks:          Hurricane Electric authorizes inclusion in global transit AS-SET
+remarks:          Hurricane Electric creates member-of-as-set object
 remarks:          NOT in customer or regional AS-SETs
 changed:          ops@he.net 20260222
 source:           RADB
@@ -1711,12 +1688,10 @@ source:           RADB
 member-of-as-set: AS64501
 member-of-as-set: AS64502
 member-of-as-set: AS64503
-member-of:        AS-ENTERPRISE-TRANSIT
-member-of:        AS-GLOBAL-PEERING
 mnt-by:           MNTR-ENTERPRISE
 admin-c:          ENT1-RIPE
 tech-c:           ENT2-RIPE
-remarks:          Enterprise authorizes all ASNs in transit and peering AS-SETs
+remarks:          Enterprise creates member-of-as-set objects for all ASNs
 changed:          admin@enterprise.com 20260222
 source:           RIPE
 </pre><a href="#section-4.4-8" class="pilcrow">¶</a>
@@ -1906,16 +1881,12 @@ Attribute: member-of-as-set
 Object Types: member-of-as-set
 Reference: RFC XXXX (this document)
 Status: Current
-
-Attribute: member-of
-Object Types: member-of-as-set, aut-num
-Reference: RFC XXXX (this document) for member-of-as-set;
-          RFC 2622 for aut-num
-Status: Current
-Note: The member-of attribute has different semantics in
-      member-of-as-set objects versus aut-num objects
 </pre><a href="#section-9-5" class="pilcrow">¶</a>
 </div>
+<p id="section-9-6">
+        Note: The member-of attribute is defined in <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span>.
+        When used in member-of-as-set objects, it follows the syntax and
+        semantics defined in RFC 2622.<a href="#section-9-6" class="pilcrow">¶</a></p>
 </section>
 </div>
 <section id="section-10">

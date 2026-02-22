@@ -155,7 +155,6 @@
 Attribute          Value                      Type
 member-of-as-set   list of &lt;as-numbers&gt; or     mandatory, multi-valued,
                    &lt;as-set-names&gt;             class key
-member-of          list of &lt;as-set-names&gt;     mandatory, multi-valued
 mnt-by             list of &lt;mntner-names&gt;     mandatory, multi-valued
 admin-c            &lt;nic-handle&gt;               mandatory, multi-valued
 tech-c             &lt;nic-handle&gt;               mandatory, multi-valued
@@ -207,25 +206,7 @@ member-of-as-set: AS-HURRICANE
             AS2914:AS-GLOBAL)</li>
           </ul>
         </section>
-
-        <section anchor="attr-member-of">
-          <name>The member-of Attribute</name>
-          <t>
-            The member-of attribute lists the AS-SET objects in which the
-            autonomous systems and AS-SETs declare membership. Each value
-            authorizes inclusion in the specified AS-SET.
-          </t>
-          <sourcecode type="text">
-member-of: AS3245:LOCAL-PEERING
-member-of: AS3245:CUSTOMERS
-          </sourcecode>
-          <t>
-            AS-SET names in the member-of attribute <bcp14>MUST</bcp14> follow
-            the naming conventions defined in <xref target="RFC2622"/> Section 5.
-          </t>
-        </section>
-
-        <section anchor="attr-other">
+<section anchor="attr-other">
           <name>Other Attributes</name>
           <t>
             The admin-c, tech-c, mnt-by, remarks, notify, changed, and source
@@ -237,19 +218,23 @@ member-of: AS3245:CUSTOMERS
       <section anchor="semantics">
         <name>Object Semantics</name>
         <t>
-          By including an AS-SET name in the member-of attribute, the
-          autonomous systems and AS-SETs listed in member-of-as-set authorize
-          their inclusion in expansions of that AS-SET.
+          The member-of-as-set object provides authorization for inclusion
+          in AS-SET expansions. When an AS or AS-SET is listed in the
+          member-of-as-set attribute of a member-of-as-set object, and that
+          object contains a reference to a specific AS-SET in its member-of
+          attribute (as defined in <xref target="RFC2622"/>), the AS or AS-SET
+          authorizes its inclusion in that AS-SET.
         </t>
         <t>
           If a member-of-as-set object exists for an autonomous system or AS-SET,
-          the member-of attribute contains an <bcp14>exhaustive whitelist</bcp14>
-          of AS-SETs in which the system or AS-SET authorizes inclusion.
-          Verification tools <bcp14>MUST</bcp14> only include the system or AS-SET
-          in expansions of AS-SETs explicitly listed in the member-of attribute.
-          If an AS-SET expansion includes the system or AS-SET but that AS-SET is
-          <bcp14>NOT</bcp14> listed in the member-of attribute, verification
-          tools <bcp14>MUST</bcp14> prune the system or AS-SET from the expansion.
+          verification tools <bcp14>SHOULD</bcp14> examine the member-of attribute
+          (as defined in <xref target="RFC2622"/>) to determine AS-SET membership
+          authorization. The member-of attribute in this context serves as an
+          exhaustive whitelist of AS-SETs in which the system or AS-SET authorizes
+          inclusion. If an AS-SET expansion includes the system or AS-SET but that
+          AS-SET is <bcp14>NOT</bcp14> listed in the member-of attribute,
+          verification tools <bcp14>MUST</bcp14> prune the system or AS-SET from
+          the expansion.
         </t>
         <t>
           If no member-of-as-set object exists for an autonomous system or AS-SET,
@@ -272,11 +257,10 @@ member-of: AS3245:CUSTOMERS
         </t>
         <sourcecode type="text">
 member-of-as-set: AS3245
-member-of:        AS3245:LOCAL-PEERING
 mnt-by:           MNTR-SOFIA-UNI
 admin-c:          DK58
 tech-c:           OPS4-RIPE
-remarks:          Sofia University only authorizes local peering AS-SET
+remarks:          Sofia University creates member-of-as-set object
 remarks:          NOT Hurricane Electric or other global AS-SETs
 changed:          admin@sofia-uni.bg 20260222
 source:           RIPE
@@ -286,7 +270,6 @@ source:           RIPE
         </t>
         <sourcecode type="text">
 member-of-as-set: AS6939
-member-of:        AS-HURRICANE
 mnt-by:           MAINT-AS6939
 admin-c:          HE-ADMIN
 tech-c:           HE-OPS
@@ -298,11 +281,10 @@ source:           RADB
         </t>
         <sourcecode type="text">
 member-of-as-set: AS-HURRICANE
-member-of:        AS-GLOBAL-TRANSIT
 mnt-by:           MAINT-AS6939
 admin-c:          HE-ADMIN
 tech-c:           HE-OPS
-remarks:          Hurricane Electric authorizes inclusion in global transit AS-SET
+remarks:          Hurricane Electric creates member-of-as-set object
 remarks:          NOT in customer or regional AS-SETs
 changed:          ops@he.net 20260222
 source:           RADB
@@ -314,12 +296,10 @@ source:           RADB
 member-of-as-set: AS64501
 member-of-as-set: AS64502
 member-of-as-set: AS64503
-member-of:        AS-ENTERPRISE-TRANSIT
-member-of:        AS-GLOBAL-PEERING
 mnt-by:           MNTR-ENTERPRISE
 admin-c:          ENT1-RIPE
 tech-c:           ENT2-RIPE
-remarks:          Enterprise authorizes all ASNs in transit and peering AS-SETs
+remarks:          Enterprise creates member-of-as-set objects for all ASNs
 changed:          admin@enterprise.com 20260222
 source:           RIPE
         </sourcecode>
@@ -482,15 +462,12 @@ Attribute: member-of-as-set
 Object Types: member-of-as-set
 Reference: RFC XXXX (this document)
 Status: Current
-
-Attribute: member-of
-Object Types: member-of-as-set, aut-num
-Reference: RFC XXXX (this document) for member-of-as-set;
-          RFC 2622 for aut-num
-Status: Current
-Note: The member-of attribute has different semantics in
-      member-of-as-set objects versus aut-num objects
       </sourcecode>
+      <t>
+        Note: The member-of attribute is defined in <xref target="RFC2622"/>.
+        When used in member-of-as-set objects, it follows the syntax and
+        semantics defined in RFC 2622.
+      </t>
     </section>
   </middle>
 
