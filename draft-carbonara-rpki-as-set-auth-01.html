@@ -1,0 +1,3509 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>RPKI-Based AS-SET Authorization (RASA)</title>
+<meta content="Mikael Abrahamsson" name="author">
+<meta content="
+       
+        This document defines a new Resource Public Key Infrastructure (RPKI)
+        object type called RPKI AS-SET Authorization (RASA). RASA allows
+        autonomous systems to cryptographically sign the membership of their
+        AS-SETs, enabling secure AS-SET verification during route filter
+        generation.
+       
+       
+        The RASA object addresses a fundamental limitation of existing IRR-based
+        AS-SET mechanisms: the inability to verify AS-SET membership
+        cryptographically. By storing AS-SET membership in RPKI-signed objects,
+        operators can generate route filters with cryptographic assurance that
+        AS-SET members are authentic.
+       
+    " name="description">
+<meta content="xml2rfc 3.31.0" name="generator">
+<meta content="RPKI" name="keyword">
+<meta content="AS-SET" name="keyword">
+<meta content="BGP" name="keyword">
+<meta content="IRR" name="keyword">
+<meta content="Route Filter" name="keyword">
+<meta content="draft-carbonara-rpki-as-set-auth-01" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.31.0
+    Python 3.14.3
+    ConfigArgParse 1.7.1
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.2
+    platformdirs 4.5.1
+    pycountry 24.6.1
+    PyYAML 6.0.3
+    requests 2.32.5
+    wcwidth 0.2.14
+-->
+<link href="draft-carbonara-rpki-as-set-auth-01.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">/*
+
+  NOTE: Changes at the bottom of this file overrides some earlier settings.
+
+  Once the style has stabilized and has been adopted as an official RFC style,
+  this can be consolidated so that style settings occur only in one place, but
+  for now the contents of this file consists first of the initial CSS work as
+  provided to the RFC Formatter (xml2rfc) work, followed by itemized and
+  commented changes found necessary during the development of the v3
+  formatters.
+
+*/
+
+/* fonts */
+@import url('https://static.ietf.org/fonts/noto-sans/import.css'); /* Sans-serif */
+@import url('https://static.ietf.org/fonts/noto-serif/import.css'); /* Serif (print) */
+@import url('https://static.ietf.org/fonts/roboto-mono/import.css'); /* Monospace */
+
+:root {
+  --font-sans: 'Noto Sans', Arial, Helvetica, sans-serif;
+  --font-serif: 'Noto Serif', 'Times', 'Times New Roman', serif;
+  --font-mono: 'Roboto Mono', Courier, 'Courier New', monospace;
+}
+
+@viewport {
+  zoom: 1.0;
+}
+@-ms-viewport {
+  width: extend-to-zoom;
+  zoom: 1.0;
+}
+/* general and mobile first */
+html {
+}
+body {
+  max-width: 90%;
+  margin: 1.5em auto;
+  color: #222;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  scroll-behavior: smooth;
+  overflow-wrap: break-word;
+}
+.ears {
+  display: none;
+}
+
+/* headings */
+#title, h1, h2, h3, h4, h5, h6 {
+  margin: 1em 0 0.5em;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#title {
+  clear: both;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 0.5em 0;
+  padding: 1em 0 0.5em;
+}
+.author {
+  padding-bottom: 4px;
+}
+h1 {
+  font-size: 26px;
+  margin: 1em 0;
+}
+h2 {
+  font-size: 22px;
+  margin-top: -20px;  /* provide offset for in-page anchors */
+  padding-top: 33px;
+}
+h3 {
+  font-size: 18px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h4 {
+  font-size: 16px;
+  margin-top: -36px;  /* provide offset for in-page anchors */
+  padding-top: 42px;
+}
+h5, h6 {
+  font-size: 14px;
+}
+#n-copyright-notice {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 1em;
+  margin-bottom: 1em;
+}
+/* general structure */
+p {
+  padding: 0;
+  margin: 0 0 1em 0;
+  text-align: left;
+}
+div, span {
+  position: relative;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+@media print {
+  svg {
+    max-height: 850px;
+    max-width: 660px;
+  }
+}
+svg[font-family~="serif" i], svg [font-family~="serif" i] {
+  font-family: var(--font-serif);
+}
+svg[font-family~="sans-serif" i], svg [font-family~="sans-serif" i] {
+  font-family: var(--font-sans);
+}
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  padding: 1em 1em 0;
+  margin-bottom: 1.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  display: table;
+  border: none;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 1em 2em;
+}
+ol ol, ul ul, ol ul, ul ol {
+  margin-left: 1em;
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+.ulCompact li {
+  margin: 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+}
+ul.empty li, .ulEmpty li {
+  margin-top: 0.5em;
+}
+ul.ulBare, li.ulBare {
+  margin-left: 0em !important;
+}
+ul.compact, .ulCompact,
+ol.compact, .olCompact {
+  line-height: 100%;
+  margin: 0 0 0 2em;
+}
+
+/* definition lists */
+dl {
+}
+dl > dt {
+  float: left;
+  margin-right: 1em;
+}
+/* 
+dl.nohang > dt {
+  float: none;
+}
+*/
+dl > dd {
+  margin-bottom: .8em;
+  min-height: 1.3em;
+}
+dl.compact > dd, .dlCompact > dd {
+  margin-bottom: 0em;
+}
+dl > dd > dl {
+  margin-top: 0.5em;
+  margin-bottom: 0em;
+}
+
+/* links */
+a {
+  text-decoration: none;
+}
+a[href] {
+  color: #22e; /* Arlen: WCAG 2019 */
+}
+a[href]:hover {
+  background-color: #f2f2f2;
+}
+figcaption a[href],
+a[href].selfRef {
+  color: #222;
+}
+/* XXX probably not this:
+a.selfRef:hover {
+  background-color: transparent;
+  cursor: default;
+} */
+
+/* Figures */
+tt, code, pre {
+  background-color: #f9f9f9;
+  font-family: var(--font-mono);
+}
+pre {
+  border: 1px solid #eee;
+  margin: 0;
+  padding: 1em;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption {
+  font-style: italic;
+  margin: 0 0 1em 0;
+}
+@media screen {
+  pre {
+    overflow-x: auto;
+    max-width: 100%;
+    max-width: calc(100% - 22px);
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 1.2em 2em;
+}
+blockquote {
+  background-color: #f9f9f9;
+  color: #111; /* Arlen: WCAG 2019 */
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin: 1em 0;
+}
+blockquote > *:last-child {
+  margin-bottom: 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+.xref {
+  overflow-wrap: normal;
+}
+
+/* tables */
+table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  border: 1px solid #eee;
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.5em 0.75em;
+}
+th {
+  text-align: left;
+  background-color: #e9e9e9;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f5f5f5;
+}
+table caption {
+  font-style: italic;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+table p {
+  /* XXX to avoid bottom margin on table row signifiers. If paragraphs should
+     be allowed within tables more generally, it would be far better to select on a class. */
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  color: #666; /* Arlen: AHDJ 2019 */
+  text-decoration: none;
+  visibility: hidden;
+  user-select: none;
+  -ms-user-select: none;
+  -o-user-select:none;
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+@media screen {
+  aside:hover > a.pilcrow,
+  p:hover > a.pilcrow,
+  blockquote:hover > a.pilcrow,
+  div:hover > a.pilcrow,
+  li:hover > a.pilcrow,
+  pre:hover > a.pilcrow {
+    visibility: visible;
+  }
+  a.pilcrow:hover {
+    background-color: transparent;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid #eee;
+}
+.bcp14 {
+  font-variant: small-caps;
+}
+
+.role {
+  font-variant: all-small-caps;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: 0.9em;
+}
+#identifiers dt {
+  width: 3em;
+  clear: left;
+}
+#identifiers dd {
+  float: left;
+  margin-bottom: 0;
+}
+/* Fix PDF info block run off issue */
+@media print {
+  #identifiers dd {
+    max-width: 100%;
+  }
+}
+#identifiers .authors .author {
+  display: inline-block;
+  margin-right: 1.5em;
+}
+#identifiers .authors .org {
+  font-style: italic;
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #666; /* Arlen: WCAG 2019 */
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: left;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc  {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+}
+nav.toc ul {
+  margin: 0 0.5em 0 0;
+  padding: 0;
+  list-style: none;
+}
+nav.toc li {
+  line-height: 1.3em;
+  margin: 0.75em 0;
+  padding-left: 1.2em;
+  text-indent: -1.2em;
+}
+/* references */
+.references dt {
+  text-align: right;
+  font-weight: bold;
+  min-width: 7em;
+}
+.references dd {
+  margin-left: 8em;
+  overflow: auto;
+}
+
+.refInstance {
+  margin-bottom: 1.25em;
+}
+
+.refSubseries {
+  margin-bottom: 1.25em;
+}
+
+.references .ascii {
+  margin-bottom: 0.25em;
+}
+
+/* index */
+.index ul {
+  margin: 0 0 0 1em;
+  padding: 0;
+  list-style: none;
+}
+.index ul ul {
+  margin: 0;
+}
+.index li {
+  margin: 0;
+  text-indent: -2em;
+  padding-left: 2em;
+  padding-bottom: 5px;
+}
+.indexIndex {
+  margin: 0.5em 0 1em;
+}
+.index a {
+  font-weight: 700;
+}
+/* make the index two-column on all but the smallest screens */
+@media (min-width: 600px) {
+  .index ul {
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+  }
+  .index ul ul {
+    -moz-column-count: 1;
+    -moz-column-gap: 0;
+  }
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  margin: 1em 0;
+}
+
+address.vcard .nameRole {
+  font-weight: 700;
+  margin-left: 0;
+}
+address.vcard .label {
+  font-family: var(--font-sans);
+  margin: 0.5em 0;
+}
+address.vcard .type {
+  display: none;
+}
+.alternative-contact {
+  margin: 1.5em 0 1em;
+}
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+
+/* temporary notes */
+.rfcEditorRemove::before {
+  position: absolute;
+  top: 0.2em;
+  right: 0.2em;
+  padding: 0.2em;
+  content: "The RFC Editor will remove this note";
+  color: #9e2a00; /* Arlen: WCAG 2019 */
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+}
+.rfcEditorRemove {
+  position: relative;
+  padding-top: 1.8em;
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  border-radius: 3px;
+}
+.cref {
+  background-color: #ffd; /* Arlen: WCAG 2019 */
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+/* alternative layout for smaller screens */
+@media screen and (max-width: 1023px) {
+  body {
+    padding-top: 2em;
+  }
+  #title {
+    padding: 1em 0;
+  }
+  h1 {
+    font-size: 24px;
+  }
+  h2 {
+    font-size: 20px;
+    margin-top: -18px;  /* provide offset for in-page anchors */
+    padding-top: 38px;
+  }
+  #identifiers dd {
+    max-width: 60%;
+  }
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 0;
+    margin: 0;
+    background-color: inherit;
+    border-bottom: 1px solid #ccc;
+  }
+  #toc h2 {
+    margin: -1px 0 0 0;
+    padding: 4px 0 4px 6px;
+    padding-right: 1em;
+    min-width: 190px;
+    font-size: 1.1em;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+  }
+  #toc h2::before { /* css hamburger */
+    float: right;
+    position: relative;
+    width: 1em;
+    height: 1px;
+    left: -164px;
+    margin: 6px 0 0 0;
+    background: white none repeat scroll 0 0;
+    box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+    content: "";
+  }
+  #toc nav {
+    display: none;
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+}
+
+/* alternative layout for wide screens */
+@media screen and (min-width: 1024px) {
+  body {
+    max-width: 724px;
+    margin: 42px auto;
+    padding-left: 1.5em;
+    padding-right: 29em;
+  }
+  #toc {
+    position: fixed;
+    top: 42px;
+    right: 42px;
+    width: 25%;
+    margin: 0;
+    padding: 0 1em;
+    z-index: 1;
+  }
+  #toc h2 {
+    border-top: none;
+    border-bottom: 1px solid #ddd;
+    font-size: 1em;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 0;
+    overflow: auto;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre {
+    page-break-inside: avoid;
+  }
+  figure {
+    overflow: scroll;
+  }
+  .breakable pre {
+    break-inside: auto;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  h2+*, h3+*, h4+*, h5+*, h6+* {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+/* This is commented out here, as the string-set: doesn't
+   pass W3C validation currently */
+/*
+.ears thead .left {
+  string-set: ears-top-left content();
+}
+
+.ears thead .center {
+  string-set: ears-top-center content();
+}
+
+.ears thead .right {
+  string-set: ears-top-right content();
+}
+
+.ears tfoot .left {
+  string-set: ears-bottom-left content();
+}
+
+.ears tfoot .center {
+  string-set: ears-bottom-center content();
+}
+
+.ears tfoot .right {
+  string-set: ears-bottom-right content();
+}
+*/
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+  /* The following is commented out here, but set appropriately by in code, as
+     the content depends on the document */
+  /*
+  @top-left {
+    content: 'Internet-Draft';
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-left {
+    content: string(ears-top-left);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-center {
+    content: string(ears-top-center);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @top-right {
+    content: string(ears-top-right);
+    vertical-align: bottom;
+    border-bottom: solid 1px #ccc;
+  }
+  @bottom-left {
+    content: string(ears-bottom-left);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-center {
+    content: string(ears-bottom-center);
+    vertical-align: top;
+    border-top: solid 1px #ccc;
+  }
+  @bottom-right {
+      content: '[Page ' counter(page) ']';
+      vertical-align: top;
+      border-top: solid 1px #ccc;
+  }
+  */
+
+}
+
+/* Changes introduced to fix issues found during implementation */
+/* Make sure links are clickable even if overlapped by following H* */
+a {
+  z-index: 2;
+}
+/* Separate body from document info even without intervening H1 */
+section {
+  clear: both;
+}
+
+
+/* Top align author divs, to avoid names without organization dropping level with org names */
+.author {
+  vertical-align: top;
+}
+
+/* Leave room in document info to show Internet-Draft on one line */
+#identifiers dt {
+  width: 8em;
+}
+
+/* Don't waste quite as much whitespace between label and value in doc info */
+#identifiers dd {
+  margin-left: 1em;
+}
+
+/* Give floating toc a background color (needed when it's a div inside section */
+#toc {
+  background-color: white;
+}
+
+/* Make the collapsed ToC header render white on gray also when it's a link */
+@media screen and (max-width: 1023px) {
+  #toc h2 a,
+  #toc h2 a:link,
+  #toc h2 a:focus,
+  #toc h2 a:hover,
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+}
+
+/* Give the bottom of the ToC some whitespace */
+@media screen and (min-width: 1024px) {
+  #toc {
+    padding: 0 0 1em 1em;
+  }
+}
+
+/* Style section numbers with more space between number and title */
+.section-number {
+  padding-right: 0.5em;
+}
+
+/* prevent monospace from becoming overly large */
+tt, code, pre {
+  font-size: 95%;
+}
+
+/* Fix the height/width aspect for ascii art*/
+.sourcecode pre,
+.art-text pre {
+  line-height: 1.12;
+}
+
+
+/* Add styling for a link in the ToC that points to the top of the document */
+a.toplink {
+  float: right;
+  margin-right: 0.5em;
+}
+
+/* Fix the dl styling to match the RFC 7992 attributes */
+dl > dt,
+dl.dlParallel > dt {
+  float: left;
+  margin-right: 1em;
+}
+dl.dlNewline > dt {
+  float: none;
+}
+
+/* Provide styling for table cell text alignment */
+table td.text-left,
+table th.text-left {
+  text-align: left;
+}
+table td.text-center,
+table th.text-center {
+  text-align: center;
+}
+table td.text-right,
+table th.text-right {
+  text-align: right;
+}
+
+/* Make the alternative author contact information look less like just another
+   author, and group it closer with the primary author contact information */
+.alternative-contact {
+  margin: 0.5em 0 0.25em 0;
+}
+address .non-ascii {
+  margin: 0 0 0 2em;
+}
+
+/* With it being possible to set tables with alignment
+  left, center, and right, { width: 100%; } does not make sense */
+table {
+  width: auto;
+}
+
+/* Avoid reference text that sits in a block with very wide left margin,
+   because of a long floating dt label.*/
+.references dd {
+  overflow: visible;
+}
+
+/* Control caption placement */
+caption {
+  caption-side: bottom;
+}
+
+/* Limit the width of the author address vcard, so names in right-to-left
+   script don't end up on the other side of the page. */
+
+address.vcard {
+  max-width: 30em;
+  margin-right: auto;
+}
+
+/* For address alignment dependent on LTR or RTL scripts */
+address div.left {
+  text-align: left;
+}
+address div.right {
+  text-align: right;
+}
+
+/* Provide table alignment support.  We can't use the alignX classes above
+   since they do unwanted things with caption and other styling. */
+table.right {
+ margin-left: auto;
+ margin-right: 0;
+}
+table.center {
+ margin-left: auto;
+ margin-right: auto;
+}
+table.left {
+ margin-left: 0;
+ margin-right: auto;
+}
+
+/* Give the table caption label the same styling as the figcaption */
+caption a[href] {
+  color: #222;
+}
+
+@media print {
+  .toplink {
+    display: none;
+  }
+
+  /* avoid overwriting the top border line with the ToC header */
+  #toc {
+    padding-top: 1px;
+  }
+
+  /* Avoid page breaks inside dl and author address entries */
+  .vcard {
+    page-break-inside: avoid;
+  }
+
+}
+/* Tweak the bcp14 keyword presentation */
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+/* Tweak the invisible space above H* in order not to overlay links in text above */
+ h2 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 31px;
+ }
+ h3 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+ h4 {
+  margin-top: -18px;  /* provide offset for in-page anchors */
+  padding-top: 24px;
+ }
+/* Float artwork pilcrow to the right */
+@media screen {
+  .artwork a.pilcrow {
+    display: block;
+    line-height: 0.7;
+    margin-top: 0.15em;
+  }
+}
+/* Make pilcrows on dd visible */
+@media screen {
+  dd:hover > a.pilcrow {
+    visibility: visible;
+  }
+}
+/* Make the placement of figcaption match that of a table's caption
+   by removing the figure's added bottom margin */
+.alignLeft.art-text,
+.alignCenter.art-text,
+.alignRight.art-text {
+   margin-bottom: 0;
+}
+.alignLeft,
+.alignCenter,
+.alignRight {
+  margin: 1em 0 0 0;
+}
+/* In print, the pilcrow won't show on hover, so prevent it from taking up space,
+   possibly even requiring a new line */
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+/* Styling for the external metadata */
+div#external-metadata {
+  background-color: #eee;
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+  display: none;
+}
+div#internal-metadata {
+  padding: 0.5em;                       /* to match the external-metadata padding */
+}
+/* Styling for title RFC Number */
+h1#rfcnum {
+  clear: both;
+  margin: 0 0 -1em;
+  padding: 1em 0 0 0;
+}
+/* Make .olPercent look the same as <ol><li> */
+dl.olPercent > dd {
+  margin-bottom: 0.25em;
+  min-height: initial;
+}
+/* Give aside some styling to set it apart */
+aside {
+  border-left: 1px solid #ddd;
+  margin: 1em 0 1em 2em;
+  padding: 0.2em 2em;
+}
+aside > dl,
+aside > ol,
+aside > ul,
+aside > table,
+aside > p {
+  margin-bottom: 0.5em;
+}
+/* Additional page break settings */
+@media print {
+  figcaption, table caption {
+    page-break-before: avoid;
+  }
+}
+/* Font size adjustments for print */
+@media print {
+  body  { font-size: 10pt;      line-height: normal; max-width: 96%; }
+  h1    { font-size: 1.72em;    padding-top: 1.5em; } /* 1*1.2*1.2*1.2 */
+  h2    { font-size: 1.44em;    padding-top: 1.5em; } /* 1*1.2*1.2 */
+  h3    { font-size: 1.2em;     padding-top: 1.5em; } /* 1*1.2 */
+  h4    { font-size: 1em;       padding-top: 1.5em; }
+  h5, h6 { font-size: 1em;      margin: initial; padding: 0.5em 0 0.3em; }
+}
+/* Sourcecode margin in print, when there's no pilcrow */
+@media print {
+  .artwork,
+  .artwork > pre,
+  .sourcecode {
+    margin-bottom: 1em;
+  }
+}
+/* Avoid narrow tables forcing too narrow table captions, which may render badly */
+table {
+  min-width: 20em;
+}
+/* ol type a */
+ol.type-a { list-style-type: lower-alpha; }
+ol.type-A { list-style-type: upper-alpha; }
+ol.type-i { list-style-type: lower-roman; }
+ol.type-I { list-style-type: upper-roman; }
+/* Apply the print table and row borders in general, on request from the RPC,
+and increase the contrast between border and odd row background slightly */
+table {
+  border: 1px solid #ddd;
+}
+td {
+  border-top: 1px solid #ddd;
+}
+tr {
+  break-inside: avoid;
+}
+tr:nth-child(2n+1) > td {
+  background-color: #f8f8f8;
+}
+/* Use style rules to govern display of the TOC. */
+@media screen and (max-width: 1023px) {
+  #toc nav { display: none; }
+  #toc.active nav { display: block; }
+}
+/* Add support for keepWithNext */
+.keepWithNext {
+  break-after: avoid-page;
+  break-after: avoid-page;
+}
+/* Add support for keepWithPrevious */
+.keepWithPrevious {
+  break-before: avoid-page;
+}
+/* Change the approach to avoiding breaks inside artwork etc. */
+figure, pre, table, .artwork, .sourcecode  {
+  break-before: auto;
+  break-after: auto;
+}
+/* Avoid breaks between <dt> and <dd> */
+dl {
+  break-before: auto;
+  break-inside: auto;
+}
+dt {
+  break-before: auto;
+  break-after: avoid-page;
+}
+dd {
+  break-before: avoid-page;
+  break-after: auto;
+  orphans: 3;
+  widows: 3
+}
+span.break, dd.break {
+  margin-bottom: 0;
+  min-height: 0;
+  break-before: auto;
+  break-inside: auto;
+  break-after: auto;
+}
+/* Undo break-before ToC */
+@media print {
+  #toc {
+    break-before: auto;
+  }
+}
+/* Text in compact lists should not get extra bottom margin space,
+   since that would makes the list not compact */
+ul.compact p, .ulCompact p,
+ol.compact p, .olCompact p {
+ margin: 0;
+}
+/* But the list as a whole needs the extra space at the end */
+section ul.compact,
+section .ulCompact,
+section ol.compact,
+section .olCompact {
+  margin-bottom: 1em;                    /* same as p not within ul.compact etc. */
+}
+/* The tt and code background above interferes with for instance table cell
+   backgrounds.  Changed to something a bit more selective. */
+tt, code {
+  background-color: transparent;
+}
+p tt, p code, li tt, li code, dt tt, dt code {
+  background-color: #f8f8f8;
+}
+/* Tweak the pre margin -- 0px doesn't come out well */
+pre {
+   margin-top: 0.5px;
+}
+/* Tweak the compact list text */
+ul.compact, .ulCompact,
+ol.compact, .olCompact,
+dl.compact, .dlCompact {
+  line-height: normal;
+}
+/* Don't add top margin for nested lists */
+li > ul, li > ol, li > dl,
+dd > ul, dd > ol, dd > dl,
+dl > dd > dl {
+  margin-top: initial;
+}
+/* Elements that should not be rendered on the same line as a <dt> */
+/* This should match the element list in writer.text.TextWriter.render_dl() */
+dd > div.artwork:first-child,
+dd > aside:first-child,
+dd > blockquote:first-child,
+dd > figure:first-child,
+dd > ol:first-child,
+dd > div.sourcecode:first-child,
+dd > table:first-child,
+dd > ul:first-child {
+  clear: left;
+}
+/* fix for weird browser behaviour when <dd/> is empty */
+dt+dd:empty::before{
+  content: "\00a0";
+}
+/* Make paragraph spacing inside <li> smaller than in body text, to fit better within the list */
+li > p {
+  margin-bottom: 0.5em
+}
+/* Don't let p margin spill out from inside list items */
+li > p:last-of-type:only-child {
+  margin-bottom: 0;
+}
+</style>
+<link href="rfc-local.css" rel="stylesheet" type="text/css">
+<script type="application/javascript">async function addMetadata(){try{const e=document.styleSheets[0].cssRules;for(let t=0;t<e.length;t++)if(/#identifiers/.exec(e[t].selectorText)){const a=e[t].cssText.replace("#identifiers","#external-updates");document.styleSheets[0].insertRule(a,document.styleSheets[0].cssRules.length)}}catch(e){console.log(e)}const e=document.getElementById("external-metadata");if(e)try{var t,a="",o=function(e){const t=document.getElementsByTagName("meta");for(let a=0;a<t.length;a++)if(t[a].getAttribute("name")===e)return t[a].getAttribute("content");return""}("rfc.number");if(o){t="https://www.rfc-editor.org/rfc/rfc"+o+".json";try{const e=await fetch(t);a=await e.json()}catch(e){t=document.URL.indexOf("html")>=0?document.URL.replace(/html$/,"json"):document.URL+".json";const o=await fetch(t);a=await o.json()}}if(!a)return;e.style.display="block";const s="",d="https://datatracker.ietf.org/doc",n="https://datatracker.ietf.org/ipr/search",c="https://www.rfc-editor.org/info",l=a.doc_id.toLowerCase(),i=a.doc_id.slice(0,3).toLowerCase(),f=a.doc_id.slice(3).replace(/^0+/,""),u={status:"Status",obsoletes:"Obsoletes",obsoleted_by:"Obsoleted By",updates:"Updates",updated_by:"Updated By",see_also:"See Also",errata_url:"Errata"};let h="<dl style='overflow:hidden' id='external-updates'>";["status","obsoletes","obsoleted_by","updates","updated_by","see_also","errata_url"].forEach(e=>{if("status"==e){a[e]=a[e].toLowerCase();var t=a[e].split(" "),o=t.length,w="",p=1;for(let e=0;e<o;e++)p<o?w=w+r(t[e])+" ":w+=r(t[e]),p++;a[e]=w}else if("obsoletes"==e||"obsoleted_by"==e||"updates"==e||"updated_by"==e){var g,m="",b=1;g=a[e].length;for(let t=0;t<g;t++)a[e][t]&&(a[e][t]=String(a[e][t]).toLowerCase(),m=b<g?m+"<a href='"+s+"/rfc/".concat(a[e][t])+"'>"+a[e][t].slice(3)+"</a>, ":m+"<a href='"+s+"/rfc/".concat(a[e][t])+"'>"+a[e][t].slice(3)+"</a>",b++);a[e]=m}else if("see_also"==e){var y,L="",C=1;y=a[e].length;for(let t=0;t<y;t++)if(a[e][t]){a[e][t]=String(a[e][t]);var _=a[e][t].slice(0,3),v=a[e][t].slice(3).replace(/^0+/,"");L=C<y?"RFC"!=_?L+"<a href='"+s+"/info/"+_.toLowerCase().concat(v.toLowerCase())+"'>"+_+" "+v+"</a>, ":L+"<a href='"+s+"/info/"+_.toLowerCase().concat(v.toLowerCase())+"'>"+v+"</a>, ":"RFC"!=_?L+"<a href='"+s+"/info/"+_.toLowerCase().concat(v.toLowerCase())+"'>"+_+" "+v+"</a>":L+"<a href='"+s+"/info/"+_.toLowerCase().concat(v.toLowerCase())+"'>"+v+"</a>",C++}a[e]=L}else if("errata_url"==e){var R="";R=a[e]?R+"<a href='"+a[e]+"'>Errata exist</a> | <a href='"+d+"/"+l+"'>Datatracker</a>| <a href='"+n+"/?"+i+"="+f+"&submit="+i+"'>IPR</a> | <a href='"+c+"/"+l+"'>Info page</a>":"<a href='"+d+"/"+l+"'>Datatracker</a> | <a href='"+n+"/?"+i+"="+f+"&submit="+i+"'>IPR</a> | <a href='"+c+"/"+l+"'>Info page</a>",a[e]=R}""!=a[e]?"Errata"==u[e]?h+=`<dt>More info:</dt><dd>${a[e]}</dd>`:h+=`<dt>${u[e]}:</dt><dd>${a[e]}</dd>`:"Errata"==u[e]&&(h+=`<dt>More info:</dt><dd>${a[e]}</dd>`)}),h+="</dl>",e.innerHTML=h}catch(e){console.log(e)}else console.log("Could not locate metadata <div> element");function r(e){return e.charAt(0).toUpperCase()+e.slice(1)}}window.removeEventListener("load",addMetadata),window.addEventListener("load",addMetadata);</script>
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">RPKI AS-SET Authorization</td>
+<td class="right">February 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Abrahamsson</td>
+<td class="center">Expires 27 August 2026</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">Global Routing Operations</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-carbonara-rpki-as-set-auth-01</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-02-23" class="published">23 February 2026</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Standards Track</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2026-08-27">27 August 2026</time></dd>
+<dt class="label-authors">Author:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">M. Abrahamsson</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">RPKI-Based AS-SET Authorization (RASA)</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">
+        This document defines a new Resource Public Key Infrastructure (RPKI)
+        object type called RPKI AS-SET Authorization (RASA). RASA allows
+        autonomous systems to cryptographically sign the membership of their
+        AS-SETs, enabling secure AS-SET verification during route filter
+        generation.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+<p id="section-abstract-2">
+        The RASA object addresses a fundamental limitation of existing IRR-based
+        AS-SET mechanisms: the inability to verify AS-SET membership
+        cryptographically. By storing AS-SET membership in RPKI-signed objects,
+        operators can generate route filters with cryptographic assurance that
+        AS-SET members are authentic.<a href="#section-abstract-2" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 27 August 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-design-rationale" class="internal xref">Design Rationale</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-irr-based-approaches" class="internal xref">IRR-Based Approaches</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-aspa-comparison" class="internal xref">ASPA Comparison</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-design-goals" class="internal xref">Design Goals</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-rasa-objects" class="internal xref">RASA Objects</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-rasa-set-object" class="internal xref">RASA-SET Object</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.1">
+                    <p id="section-toc.1-1.4.2.1.2.1.1"><a href="#section-4.1.1" class="auto internal xref">4.1.1</a>.  <a href="#name-object-format" class="internal xref">Object Format</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1.2.2">
+                    <p id="section-toc.1-1.4.2.1.2.2.1"><a href="#section-4.1.2" class="auto internal xref">4.1.2</a>.  <a href="#name-field-definitions" class="internal xref">Field Definitions</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2">
+                <p id="section-toc.1-1.4.2.2.1"><a href="#section-4.2" class="auto internal xref">4.2</a>.  <a href="#name-rasa-auth-object" class="internal xref">RASA-AUTH Object</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.1">
+                    <p id="section-toc.1-1.4.2.2.2.1.1"><a href="#section-4.2.1" class="auto internal xref">4.2.1</a>.  <a href="#name-object-format-2" class="internal xref">Object Format</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.2.2.2">
+                    <p id="section-toc.1-1.4.2.2.2.2.1"><a href="#section-4.2.2" class="auto internal xref">4.2.2</a>.  <a href="#name-field-definitions-2" class="internal xref">Field Definitions</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3">
+                <p id="section-toc.1-1.4.2.3.1"><a href="#section-4.3" class="auto internal xref">4.3</a>.  <a href="#name-design-considerations-unifi" class="internal xref">Design Considerations: Unified vs. Separate Objects</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.1">
+                    <p id="section-toc.1-1.4.2.3.2.1.1"><a href="#section-4.3.1" class="auto internal xref">4.3.1</a>.  <a href="#name-separate-objects-this-speci" class="internal xref">Separate Objects (This Specification)</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.2">
+                    <p id="section-toc.1-1.4.2.3.2.2.1"><a href="#section-4.3.2" class="auto internal xref">4.3.2</a>.  <a href="#name-alternative-unified-object" class="internal xref">Alternative: Unified Object</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.3.2.3">
+                    <p id="section-toc.1-1.4.2.3.2.3.1"><a href="#section-4.3.3" class="auto internal xref">4.3.3</a>.  <a href="#name-design-recommendation" class="internal xref">Design Recommendation</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-rasa-verification" class="internal xref">RASA Verification</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.1">
+                <p id="section-toc.1-1.5.2.1.1"><a href="#section-5.1" class="auto internal xref">5.1</a>.  <a href="#name-signature-validation" class="internal xref">Signature Validation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.2">
+                <p id="section-toc.1-1.5.2.2.1"><a href="#section-5.2" class="auto internal xref">5.2</a>.  <a href="#name-content-validation" class="internal xref">Content Validation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5.2.3">
+                <p id="section-toc.1-1.5.2.3.1"><a href="#section-5.3" class="auto internal xref">5.3</a>.  <a href="#name-as-set-expansion-with-rasa" class="internal xref">AS-SET Expansion with RASA</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-conflict-resolution" class="internal xref">Conflict Resolution</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.1">
+                <p id="section-toc.1-1.6.2.1.1"><a href="#section-6.1" class="auto internal xref">6.1</a>.  <a href="#name-priority-rules" class="internal xref">Priority Rules</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6.2.2">
+                <p id="section-toc.1-1.6.2.2.1"><a href="#section-6.2" class="auto internal xref">6.2</a>.  <a href="#name-conflict-examples" class="internal xref">Conflict Examples</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-circular-reference-detectio" class="internal xref">Circular Reference Detection</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-detection-algorithm" class="internal xref">Detection Algorithm</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-circular-reference-example" class="internal xref">Circular Reference Example</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-use-cases" class="internal xref">Use Cases</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-content-provider-protection" class="internal xref">Content Provider Protection</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.2">
+                <p id="section-toc.1-1.8.2.2.1"><a href="#section-8.2" class="auto internal xref">8.2</a>.  <a href="#name-tier-1-provider-protection" class="internal xref">Tier-1 Provider Protection</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.3">
+                <p id="section-toc.1-1.8.2.3.1"><a href="#section-8.3" class="auto internal xref">8.3</a>.  <a href="#name-enterprise-multi-asn" class="internal xref">Enterprise Multi-ASN</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.4">
+                <p id="section-toc.1-1.8.2.4.1"><a href="#section-8.4" class="auto internal xref">8.4</a>.  <a href="#name-irr-namespace-binding" class="internal xref">IRR Namespace Binding</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.1">
+                <p id="section-toc.1-1.9.2.1.1"><a href="#section-9.1" class="auto internal xref">9.1</a>.  <a href="#name-rpki-key-management" class="internal xref">RPKI Key Management</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.2">
+                <p id="section-toc.1-1.9.2.2.1"><a href="#section-9.2" class="auto internal xref">9.2</a>.  <a href="#name-partial-deployment" class="internal xref">Partial Deployment</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.3">
+                <p id="section-toc.1-1.9.2.3.1"><a href="#section-9.3" class="auto internal xref">9.3</a>.  <a href="#name-chain-attack-mitigation" class="internal xref">Chain Attack Mitigation</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9.2.4">
+                <p id="section-toc.1-1.9.2.4.1"><a href="#section-9.4" class="auto internal xref">9.4</a>.  <a href="#name-chain-of-trust-limitations" class="internal xref">Chain-of-Trust Limitations</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-deployment-considerations" class="internal xref">Deployment Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-phase-1-high-value-as-sets" class="internal xref">Phase 1: High-Value AS-SETs</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-phase-2-tool-integration" class="internal xref">Phase 2: Tool Integration</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.3">
+                <p id="section-toc.1-1.10.2.3.1"><a href="#section-10.3" class="auto internal xref">10.3</a>.  <a href="#name-phase-3-widespread-adoption" class="internal xref">Phase 3: Widespread Adoption</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.4">
+                <p id="section-toc.1-1.10.2.4.1"><a href="#section-10.4" class="auto internal xref">10.4</a>.  <a href="#name-alternative-aspa-synthesis" class="internal xref">Alternative: ASPA Synthesis</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.4.2.1">
+                    <p id="section-toc.1-1.10.2.4.2.1.1"><a href="#section-10.4.1" class="auto internal xref">10.4.1</a>.  <a href="#name-aspa-synthesis-algorithm" class="internal xref">ASPA Synthesis Algorithm</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.4.2.2">
+                    <p id="section-toc.1-1.10.2.4.2.2.1"><a href="#section-10.4.2" class="auto internal xref">10.4.2</a>.  <a href="#name-aspa-rasa-integration-model" class="internal xref">ASPA-RASA Integration Model</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.4.2.3">
+                    <p id="section-toc.1-1.10.2.4.2.3.1"><a href="#section-10.4.3" class="auto internal xref">10.4.3</a>.  <a href="#name-detailed-aspa-synthesis-lim" class="internal xref">Detailed ASPA Synthesis Limitations</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#section-11" class="auto internal xref">11</a>. <a href="#name-operational-guidance" class="internal xref">Operational Guidance</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.1">
+                <p id="section-toc.1-1.11.2.1.1"><a href="#section-11.1" class="auto internal xref">11.1</a>.  <a href="#name-publishing-rasa-objects" class="internal xref">Publishing RASA Objects</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.2">
+                <p id="section-toc.1-1.11.2.2.1"><a href="#section-11.2" class="auto internal xref">11.2</a>.  <a href="#name-consuming-rasa-objects" class="internal xref">Consuming RASA Objects</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.3">
+                <p id="section-toc.1-1.11.2.3.1"><a href="#section-11.3" class="auto internal xref">11.3</a>.  <a href="#name-monitoring-and-alerting" class="internal xref">Monitoring and Alerting</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4">
+                <p id="section-toc.1-1.11.2.4.1"><a href="#section-11.4" class="auto internal xref">11.4</a>.  <a href="#name-detailed-operational-exampl" class="internal xref">Detailed Operational Examples</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4.2.1">
+                    <p id="section-toc.1-1.11.2.4.2.1.1"><a href="#section-11.4.1" class="auto internal xref">11.4.1</a>.  <a href="#name-example-1-tier-1-provider-c" class="internal xref">Example 1: Tier-1 Provider Customer AS-SET</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4.2.2">
+                    <p id="section-toc.1-1.11.2.4.2.2.1"><a href="#section-11.4.2" class="auto internal xref">11.4.2</a>.  <a href="#name-example-2-content-provider-" class="internal xref">Example 2: Content Provider Multi-AS Protection</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4.2.3">
+                    <p id="section-toc.1-1.11.2.4.2.3.1"><a href="#section-11.4.3" class="auto internal xref">11.4.3</a>.  <a href="#name-example-3-complete-validato" class="internal xref">Example 3: Complete Validator Decision Flow</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11.2.4.2.4">
+                    <p id="section-toc.1-1.11.2.4.2.4.1"><a href="#section-11.4.4" class="auto internal xref">11.4.4</a>.  <a href="#name-example-4-partial-deploymen" class="internal xref">Example 4: Partial Deployment Scenario</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#section-12" class="auto internal xref">12</a>. <a href="#name-relationship-to-asgroup" class="internal xref">Relationship to ASGroup</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.1">
+                <p id="section-toc.1-1.12.2.1.1"><a href="#section-12.1" class="auto internal xref">12.1</a>.  <a href="#name-asgroup-innovations" class="internal xref">ASGroup Innovations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.2">
+                <p id="section-toc.1-1.12.2.2.1"><a href="#section-12.2" class="auto internal xref">12.2</a>.  <a href="#name-rasa-simplifications" class="internal xref">RASA Simplifications</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12.2.3">
+                <p id="section-toc.1-1.12.2.3.1"><a href="#section-12.3" class="auto internal xref">12.3</a>.  <a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13">
+            <p id="section-toc.1-1.13.1"><a href="#section-13" class="auto internal xref">13</a>. <a href="#name-irr-operator-considerations" class="internal xref">IRR Operator Considerations (To Be Investigated)</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.1">
+                <p id="section-toc.1-1.13.2.1.1"><a href="#section-13.1" class="auto internal xref">13.1</a>.  <a href="#name-irr-object-deletion-vs-rete" class="internal xref">IRR Object Deletion vs Retention</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.2">
+                <p id="section-toc.1-1.13.2.2.1"><a href="#section-13.2" class="auto internal xref">13.2</a>.  <a href="#name-irr-rasa-synchronization" class="internal xref">IRR-RASA Synchronization</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.13.2.3">
+                <p id="section-toc.1-1.13.2.3.1"><a href="#section-13.3" class="auto internal xref">13.3</a>.  <a href="#name-transition-period-managemen" class="internal xref">Transition Period Management</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14">
+            <p id="section-toc.1-1.14.1"><a href="#section-14" class="auto internal xref">14</a>. <a href="#name-failure-modes" class="internal xref">Failure Modes</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.1">
+                <p id="section-toc.1-1.14.2.1.1"><a href="#section-14.1" class="auto internal xref">14.1</a>.  <a href="#name-signature-validation-failur" class="internal xref">Signature Validation Failures</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.2">
+                <p id="section-toc.1-1.14.2.2.1"><a href="#section-14.2" class="auto internal xref">14.2</a>.  <a href="#name-repository-availability-fai" class="internal xref">Repository Availability Failures</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.3">
+                <p id="section-toc.1-1.14.2.3.1"><a href="#section-14.3" class="auto internal xref">14.3</a>.  <a href="#name-policy-violation-failures" class="internal xref">Policy Violation Failures</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.14.2.4">
+                <p id="section-toc.1-1.14.2.4.1"><a href="#section-14.4" class="auto internal xref">14.4</a>.  <a href="#name-chain-protection-failures" class="internal xref">Chain Protection Failures</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.15">
+            <p id="section-toc.1-1.15.1"><a href="#section-15" class="auto internal xref">15</a>. <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16">
+            <p id="section-toc.1-1.16.1"><a href="#section-16" class="auto internal xref">16</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.1">
+                <p id="section-toc.1-1.16.2.1.1"><a href="#section-16.1" class="auto internal xref">16.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.16.2.2">
+                <p id="section-toc.1-1.16.2.2.1"><a href="#section-16.2" class="auto internal xref">16.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.17">
+            <p id="section-toc.1-1.17.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-authors-address" class="internal xref">Author's Address</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">
+        Internet Routing Registry (IRR) databases have long been used to
+        generate BGP route filters. The Routing Policy Specification Language
+        (RPSL) <span>[<a href="#RFC2622" class="cite xref">RFC2622</a>]</span> defines the as-set object, which
+        represents a set of autonomous systems. However, IRR-based AS-SETs
+        suffer from a fundamental security limitation: membership is controlled
+        solely by the AS-SET owner, without cryptographic verification or
+        member authorization.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">
+        This creates two significant problems:<a href="#section-1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-1-3">
+        <li id="section-1-3.1">
+          <strong>Unauthorized Inclusion:</strong> An AS-SET owner can include
+          any autonomous system without authorization, potentially allowing
+          route leaks or policy violations.<a href="#section-1-3.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-1-3.2">
+          <strong>Transitive Chain Attacks:</strong> AS-SET expansion is
+          transitive - if AS-SET A contains AS-SET B, and B contains AS C,
+          then A implicitly contains C. This creates a chain of trust where
+          compromising any link compromises the entire chain.<a href="#section-1-3.2" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-1-4">
+        RPKI AS-SET Authorization (RASA) addresses these limitations by:<a href="#section-1-4" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-1-5.1">
+          Providing cryptographic signatures for AS-SET membership via RPKI<a href="#section-1-5.1" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-5.2">
+          Enabling verification during AS-SET expansion<a href="#section-1-5.2" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-5.3">
+          Supporting "do-not-inherit" semantics to prevent transitive attacks<a href="#section-1-5.3" class="pilcrow">¶</a>
+</li>
+        <li class="normal" id="section-1-5.4">
+          Maintaining backward compatibility with existing IRR infrastructure<a href="#section-1-5.4" class="pilcrow">¶</a>
+</li>
+      </ul>
+</section>
+</div>
+<div id="terminology">
+<section id="section-2">
+      <h2 id="name-terminology">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+      </h2>
+<p id="section-2-1">
+        The key words <span class="bcp14">MUST</span>, <span class="bcp14">MUST NOT</span>,
+        <span class="bcp14">REQUIRED</span>, <span class="bcp14">SHALL</span>, <span class="bcp14">SHALL NOT</span>,
+        <span class="bcp14">SHOULD</span>, <span class="bcp14">SHOULD NOT</span>,
+        <span class="bcp14">RECOMMENDED</span>, <span class="bcp14">MAY</span>, and
+        <span class="bcp14">OPTIONAL</span> in this document are to be interpreted as
+        described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span>.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-2">
+        <dt id="section-2-2.1">RASA:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.2">RPKI AS-SET Authorization object<a href="#section-2-2.2" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.3">CAS:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.4">Containing Autonomous System - the AS that owns the AS-SET<a href="#section-2-2.4" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.5">MAS:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.6">Member Autonomous System - an AS listed as a member<a href="#section-2-2.6" class="pilcrow">¶</a>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-2.7">AS-SET Name:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-2.8">An RPSL name identifying an AS-SET (e.g., AS6939:AS-HURRICANE, AS1299:AS-TWELVE99)<a href="#section-2-2.8" class="pilcrow">¶</a>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="rationale">
+<section id="section-3">
+      <h2 id="name-design-rationale">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-design-rationale" class="section-name selfRef">Design Rationale</a>
+      </h2>
+<p id="section-3-1">
+        The RASA design is informed by several existing mechanisms and their
+        limitations:<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="irr-limitations">
+<section id="section-3.1">
+        <h3 id="name-irr-based-approaches">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-irr-based-approaches" class="section-name selfRef">IRR-Based Approaches</a>
+        </h3>
+<p id="section-3.1-1">
+          IRR-based AS-SETs rely on the AS-SET owner's mnt-by attribute for
+          authentication. This has several weaknesses:<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.1-2.1">No cryptographic verification of membership<a href="#section-3.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-2.2">Members cannot prevent unauthorized inclusion<a href="#section-3.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-2.3">Transitive inclusion cannot be controlled<a href="#section-3.1-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.1-2.4">Authentication relies on passwords or PGP keys in IRR<a href="#section-3.1-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.1-3">
+          The member-of-as-set proposal <span>[<a href="#I-D.member-of-as-set" class="cite xref">I-D.member-of-as-set</a>]</span>
+          addresses some of these issues but requires the IRR database to
+          support a new object type and does not provide cryptographic
+          verification.<a href="#section-3.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1-4">
+          Prior work by Snijders and Korsbäck proposed ASGroup
+          <span>[<a href="#I-D.asgroup" class="cite xref">I-D.asgroup</a>]</span>, an RPKI-based AS grouping mechanism
+          with a complex opt-out mechanism. RASA takes a different approach
+          with a simplified model that prioritizes IRR compatibility and
+          incremental deployment. The opt-out mechanism in ASGroup proved
+          difficult to reason about operationally and added significant
+          complexity to both specification and implementation.<a href="#section-3.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="aspa-comparison">
+<section id="section-3.2">
+        <h3 id="name-aspa-comparison">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-aspa-comparison" class="section-name selfRef">ASPA Comparison</a>
+        </h3>
+<p id="section-3.2-1">
+          Autonomous System Provider Authorization (ASPA) <span>[<a href="#I-D.aspa" class="cite xref">I-D.aspa</a>]</span>
+          provides cryptographic verification of provider relationships. ASPA
+          proves that a Customer AS (CAS) has authorized a Provider AS (PAS)
+          as its upstream.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.2-2">
+          However, ASPA has a different scope than RASA:<a href="#section-3.2-2" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-3.2-3.1">ASPA proves provider-customer relationships<a href="#section-3.2-3.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.2-3.2">RASA proves AS-SET membership<a href="#section-3.2-3.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.2-3.3">ASPA is used during BGP path validation<a href="#section-3.2-3.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-3.2-3.4">RASA is used during route filter generation<a href="#section-3.2-3.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-3.2-4">
+          While both use RPKI, they serve complementary purposes and are not
+          interchangeable.<a href="#section-3.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="design-goals">
+<section id="section-3.3">
+        <h3 id="name-design-goals">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-design-goals" class="section-name selfRef">Design Goals</a>
+        </h3>
+<p id="section-3.3-1">
+          RASA is designed with the following goals:<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-3.3-2">
+          <li id="section-3.3-2.1">
+            <strong>Cryptographic Verification:</strong> Use RPKI signing to
+            ensure AS-SET membership cannot be spoofed<a href="#section-3.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.3-2.2">
+            <strong>Member Protection:</strong> Prevent unauthorized inclusion
+            of ASNs in AS-SETs<a href="#section-3.3-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.3-2.3">
+            <strong>Chain Control:</strong> Allow AS-SET owners to prevent
+            transitive inclusion attacks<a href="#section-3.3-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.3-2.4">
+            <strong>Backward Compatibility:</strong> Work alongside existing
+            IRR infrastructure<a href="#section-3.3-2.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-3.3-2.5">
+            <strong>Incremental Deployment:</strong> Provide value even with
+            partial adoption<a href="#section-3.3-2.5" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+</section>
+</div>
+<div id="rasa-objects">
+<section id="section-4">
+      <h2 id="name-rasa-objects">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-rasa-objects" class="section-name selfRef">RASA Objects</a>
+      </h2>
+<p id="section-4-1">
+        RASA defines two separate RPKI object types that work together to
+        provide complete AS-SET authorization:<a href="#section-4-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4-2">
+        <li id="section-4-2.1">
+          <strong>RASA-SET:</strong> Defines AS-SET membership (published by
+          AS-SET owner). Replaces the IRR as-set object.<a href="#section-4-2.1" class="pilcrow">¶</a>
+</li>
+        <li id="section-4-2.2">
+          <strong>RASA-AUTH:</strong> Defines which AS-SETs may include an
+          ASN (published by ASN owner). Replaces the IRR member-of-as-set
+          functionality.<a href="#section-4-2.2" class="pilcrow">¶</a>
+</li>
+      </ol>
+<p id="section-4-3">
+        These objects are intentionally separate to maintain clear separation
+        of concerns and allow independent deployment. See <a href="#design-considerations" class="auto internal xref">Section 4.3</a>
+        for discussion of alternative unified approaches.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<div id="rasa-set-object">
+<section id="section-4.1">
+        <h3 id="name-rasa-set-object">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-rasa-set-object" class="section-name selfRef">RASA-SET Object</a>
+        </h3>
+<p id="section-4.1-1">
+          The RASA-SET object defines the membership of an AS-SET. It is
+          published by the AS that owns the AS-SET (the containingAS).<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<div id="rasa-set-format">
+<section id="section-4.1.1">
+          <h4 id="name-object-format">
+<a href="#section-4.1.1" class="section-number selfRef">4.1.1. </a><a href="#name-object-format" class="section-name selfRef">Object Format</a>
+          </h4>
+<p id="section-4.1.1-1">
+            The RASA-SET object is encoded using CMS <span>[<a href="#RFC5652" class="cite xref">RFC5652</a>]</span> with
+            the SignedData content type. The eContentType is:<a href="#section-4.1.1-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-4.1.1-2">
+<pre>
+id-rpki-rasa-set OBJECT IDENTIFIER ::= { id-rpki 42 1 }
+</pre><a href="#section-4.1.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.1.1-3">
+            The RASA-SET content has the following ASN.1 structure:<a href="#section-4.1.1-3" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-4.1.1-4">
+<pre>
+RasaSetContent ::= SEQUENCE {
+  version          [0] INTEGER DEFAULT 0,
+  asSetName            UTF8String,
+  containingAS         ASID,
+  members              SEQUENCE OF ASID,
+  nestedSets           SEQUENCE OF UTF8String OPTIONAL,
+  irrSource            UTF8String OPTIONAL,
+  flags                RasaFlags OPTIONAL,
+  notBefore            GeneralizedTime,
+  notAfter             GeneralizedTime
+}
+</pre><a href="#section-4.1.1-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="rasa-set-fields">
+<section id="section-4.1.2">
+          <h4 id="name-field-definitions">
+<a href="#section-4.1.2" class="section-number selfRef">4.1.2. </a><a href="#name-field-definitions" class="section-name selfRef">Field Definitions</a>
+          </h4>
+<span class="break"></span><dl class="dlParallel" id="section-4.1.2-1">
+            <dt id="section-4.1.2-1.1">version:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.2-1.2">
+              The version of the RASA-SET format. This document defines version 0.<a href="#section-4.1.2-1.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.1.2-1.3">asSetName:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.2-1.4">
+              The name of the AS-SET (e.g., "AS1299:AS-TWELVE99"). MUST start
+              with "AS-" per RFC2622.<a href="#section-4.1.2-1.4" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.1.2-1.5">containingAS:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.2-1.6">
+              The ASN of the AS that owns this AS-SET. Must match the AS in
+              hierarchical names (e.g., 1299 for AS1299:AS-TWELVE99).<a href="#section-4.1.2-1.6" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.1.2-1.7">members:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.2-1.8">
+              List of ASNs that are members of this AS-SET. Each ASID must be
+              unique and sorted. The containingAS MAY be included.<a href="#section-4.1.2-1.8" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.1.2-1.9">nestedSets:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.2-1.10">
+              OPTIONAL list of other AS-SET names that are members of this
+              AS-SET. Enables recursive AS-SET expansion. Each nested set
+              will be resolved by looking up its RASA-SET (or falling back
+              to IRR if no RASA-SET exists).<a href="#section-4.1.2-1.10" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.1.2-1.11">irrSource:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.2-1.12">
+              OPTIONAL authoritative IRR database for this AS-SET (e.g.,
+              "RADB", "RIPE"). Prevents namespace ambiguity.<a href="#section-4.1.2-1.12" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.1.2-1.13">flags:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.2-1.14">
+              Optional flags: doNotInherit (prevent transitive inclusion),
+              authoritative (RASA-SET replaces IRR data).<a href="#section-4.1.2-1.14" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.1.2-1.15">notBefore, notAfter:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.1.2-1.16">
+              Validity period per RPKI policies.<a href="#section-4.1.2-1.16" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="rasa-auth-object">
+<section id="section-4.2">
+        <h3 id="name-rasa-auth-object">
+<a href="#section-4.2" class="section-number selfRef">4.2. </a><a href="#name-rasa-auth-object" class="section-name selfRef">RASA-AUTH Object</a>
+        </h3>
+<p id="section-4.2-1">
+          an autonomous system or another AS-SET. It is published by the ASN or
+          AS-SET owner to control inclusion in parent AS-SETs.<a href="#section-4.2-1" class="pilcrow">¶</a></p>
+<div id="rasa-auth-format">
+<section id="section-4.2.1">
+          <h4 id="name-object-format-2">
+<a href="#section-4.2.1" class="section-number selfRef">4.2.1. </a><a href="#name-object-format-2" class="section-name selfRef">Object Format</a>
+          </h4>
+<p id="section-4.2.1-1">
+            The RASA-AUTH object is encoded using CMS <span>[<a href="#RFC5652" class="cite xref">RFC5652</a>]</span> with
+            the SignedData content type. The eContentType is:<a href="#section-4.2.1-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-4.2.1-2">
+<pre>
+id-rpki-rasa-auth OBJECT IDENTIFIER ::= { id-rpki 42 2 }
+</pre><a href="#section-4.2.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.2.1-3">
+            The RASA-AUTH content has the following ASN.1 structure:<a href="#section-4.2.1-3" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-4.2.1-4">
+<pre>
+RasaAuthContent ::= SEQUENCE {
+  version          [0] INTEGER DEFAULT 0,
+  authorizedEntity CHOICE {
+     authorizedAS        ASID,
+     authorizedSet       UTF8String
+  },
+  authorizedIn         SEQUENCE OF UTF8String,
+  flags                RasaAuthFlags OPTIONAL,
+  notBefore            GeneralizedTime,
+  notAfter             GeneralizedTime
+}
+</pre><a href="#section-4.2.1-4" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="rasa-auth-fields">
+<section id="section-4.2.2">
+          <h4 id="name-field-definitions-2">
+<a href="#section-4.2.2" class="section-number selfRef">4.2.2. </a><a href="#name-field-definitions-2" class="section-name selfRef">Field Definitions</a>
+          </h4>
+<span class="break"></span><dl class="dlParallel" id="section-4.2.2-1">
+            <dt id="section-4.2.2-1.1">version:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.2.2-1.2">
+              The version of the RASA-AUTH format. This document defines
+              version 0 (authorizedAS only) and version 1 (CHOICE support).
+              Version 1 MUST include the authorizedEntity field.<a href="#section-4.2.2-1.2" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.2.2-1.3">authorizedEntity:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.2.2-1.4">
+              <p id="section-4.2.2-1.4.1">CHOICE between authorizedAS and authorizedSet:<a href="#section-4.2.2-1.4.1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.2.2-1.4.2.1">
+                  <strong>authorizedAS:</strong> The ASN that is authorizing
+                  inclusion. Use for individual ASNs.<a href="#section-4.2.2-1.4.2.1" class="pilcrow">¶</a>
+</li>
+                <li class="normal" id="section-4.2.2-1.4.2.2">
+                  <strong>authorizedSet:</strong> The AS-SET name that is
+                  authorizing inclusion. Use for AS-SETs that may be included
+                  in other AS-SETs.<a href="#section-4.2.2-1.4.2.2" class="pilcrow">¶</a>
+</li>
+              </ul>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.2.2-1.5">authorizedIn:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.2.2-1.6">
+              Each entry is a fully qualified AS-SET name (e.g.,
+              "AS1299:AS-TWELVE99"). An empty list means the ASN refuses
+              inclusion in any AS-SET.<a href="#section-4.2.2-1.6" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.2.2-1.7">flags:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.2.2-1.8">
+              Optional flags controlling authorization behavior.
+              strictMode: If set, AS-SETs NOT in this list MUST NOT include
+              this ASN (reject rather than warn).<a href="#section-4.2.2-1.8" class="pilcrow">¶</a>
+</dd>
+            <dd class="break"></dd>
+<dt id="section-4.2.2-1.9">notBefore, notAfter:</dt>
+            <dd style="margin-left: 1.5em" id="section-4.2.2-1.10">
+              Validity period per RPKI policies.<a href="#section-4.2.2-1.10" class="pilcrow">¶</a>
+</dd>
+          <dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="design-considerations">
+<section id="section-4.3">
+        <h3 id="name-design-considerations-unifi">
+<a href="#section-4.3" class="section-number selfRef">4.3. </a><a href="#name-design-considerations-unifi" class="section-name selfRef">Design Considerations: Unified vs. Separate Objects</a>
+        </h3>
+<p id="section-4.3-1">
+          This specification defines two separate RPKI object types (RASA-SET
+          and RASA-AUTH) rather than a single unified object. This section
+          discusses the rationale and alternative approaches.<a href="#section-4.3-1" class="pilcrow">¶</a></p>
+<div id="separate-objects-approach">
+<section id="section-4.3.1">
+          <h4 id="name-separate-objects-this-speci">
+<a href="#section-4.3.1" class="section-number selfRef">4.3.1. </a><a href="#name-separate-objects-this-speci" class="section-name selfRef">Separate Objects (This Specification)</a>
+          </h4>
+<p id="section-4.3.1-1">
+            RASA-SET and RASA-AUTH are published by different parties:<a href="#section-4.3.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3.1-2.1">RASA-SET: Published by AS-SET owner (e.g., AS1299)<a href="#section-4.3.1-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.1-2.2">RASA-AUTH: Published by ASN owner (e.g., AS64496)<a href="#section-4.3.1-2.2" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-4.3.1-3">
+            <strong>Pros:</strong><a href="#section-4.3.1-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3.1-4.1">
+              Clear separation of concerns: AS-SET owner controls membership,
+              ASN owner controls inclusion authorization<a href="#section-4.3.1-4.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.1-4.2">
+              Independent deployment: Networks can publish RASA-AUTH without
+              needing to create AS-SETs<a href="#section-4.3.1-4.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.1-4.3">
+              Smaller objects: Each object type is focused and minimal<a href="#section-4.3.1-4.3" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.1-4.4">
+              Easier validation: Tools can validate each object type separately<a href="#section-4.3.1-4.4" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.1-4.5">
+              Aligns with existing IRR model (as-set vs. member-of-as-set)<a href="#section-4.3.1-4.5" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-4.3.1-5">
+            <strong>Cons:</strong><a href="#section-4.3.1-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3.1-6.1">
+              Two object types to implement and deploy<a href="#section-4.3.1-6.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.1-6.2">
+              Potential inconsistency: AS-SET claims member, but member
+              doesn't authorize (requires conflict resolution)<a href="#section-4.3.1-6.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.1-6.3">
+              More complex validator logic (must look up both types)<a href="#section-4.3.1-6.3" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+<div id="unified-object-approach">
+<section id="section-4.3.2">
+          <h4 id="name-alternative-unified-object">
+<a href="#section-4.3.2" class="section-number selfRef">4.3.2. </a><a href="#name-alternative-unified-object" class="section-name selfRef">Alternative: Unified Object</a>
+          </h4>
+<p id="section-4.3.2-1">
+            An alternative design would combine both functions into a single
+            RASA object with optional fields:<a href="#section-4.3.2-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-4.3.2-2">
+<pre>
+UnifiedRasaContent ::= SEQUENCE {
+  version          [0] INTEGER DEFAULT 0,
+  objectType       ENUMERATED { asSet(0), asnAuth(1) },
+  identifier       UTF8String,     -- asSetName or authorizedAS
+  containingAS     ASID,           -- for AS-SET objects
+  members          SEQUENCE OF ASID OPTIONAL,
+  authorizedIn     SEQUENCE OF UTF8String OPTIONAL,
+  -- ... other fields
+}
+</pre><a href="#section-4.3.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-4.3.2-3">
+            <strong>Pros:</strong><a href="#section-4.3.2-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3.2-4.1">
+              Single object type to implement and validate<a href="#section-4.3.2-4.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.2-4.2">
+              Simpler IANA registration (one OID, one file extension)<a href="#section-4.3.2-4.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.2-4.3">
+              Less object proliferation in RPKI repositories<a href="#section-4.3.2-4.3" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.2-4.4">
+              Can represent "I authorize AS-SET X and these are its members"
+              in one signed object (for AS-SETs containing only your own ASNs)<a href="#section-4.3.2-4.4" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-4.3.2-5">
+            <strong>Cons:</strong><a href="#section-4.3.2-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-4.3.2-6.1">
+              Blurred authorization boundaries: Single object published by
+              one party controls both membership and authorization<a href="#section-4.3.2-6.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.2-6.2">
+              Larger objects: Must include all fields even when only one
+              function is needed<a href="#section-4.3.2-6.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.2-6.3">
+              Complex validation: Must check objectType and conditional fields<a href="#section-4.3.2-6.3" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.2-6.4">
+              Less flexible: ASN owner cannot authorize AS-SET inclusion
+              without creating a full AS-SET object<a href="#section-4.3.2-6.4" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-4.3.2-6.5">
+              Security concern: AS-SET owner could potentially claim
+              authorization that ASN owner didn't intend<a href="#section-4.3.2-6.5" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+<div id="design-recommendation">
+<section id="section-4.3.3">
+          <h4 id="name-design-recommendation">
+<a href="#section-4.3.3" class="section-number selfRef">4.3.3. </a><a href="#name-design-recommendation" class="section-name selfRef">Design Recommendation</a>
+          </h4>
+<p id="section-4.3.3-1">
+            The separate objects approach is RECOMMENDED because:<a href="#section-4.3.3-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-4.3.3-2">
+            <li id="section-4.3.3-2.1">
+              It maintains cryptographic separation of control: only the ASN
+              owner can publish RASA-AUTH, preventing AS-SET owners from
+              forging inclusion authorization.<a href="#section-4.3.3-2.1" class="pilcrow">¶</a>
+</li>
+            <li id="section-4.3.3-2.2">
+              It allows incremental deployment: content providers can publish
+              RASA-AUTH immediately, even before RASA-SET adoption.<a href="#section-4.3.3-2.2" class="pilcrow">¶</a>
+</li>
+            <li id="section-4.3.3-2.3">
+              It aligns with the principle of least privilege: each object
+              grants only the specific authorization needed.<a href="#section-4.3.3-2.3" class="pilcrow">¶</a>
+</li>
+            <li id="section-4.3.3-2.4">
+              It mirrors the successful IRR model where as-set and
+              member-of-as-set are separate concepts.<a href="#section-4.3.3-2.4" class="pilcrow">¶</a>
+</li>
+          </ol>
+<p id="section-4.3.3-3">
+            Future specifications MAY define a unified object type if
+            operational experience shows the separate objects create
+            unacceptable overhead.<a href="#section-4.3.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="verification">
+<section id="section-5">
+      <h2 id="name-rasa-verification">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-rasa-verification" class="section-name selfRef">RASA Verification</a>
+      </h2>
+<p id="section-5-1">
+        RASA objects are verified using standard RPKI validation procedures.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<div id="signature-validation">
+<section id="section-5.1">
+        <h3 id="name-signature-validation">
+<a href="#section-5.1" class="section-number selfRef">5.1. </a><a href="#name-signature-validation" class="section-name selfRef">Signature Validation</a>
+        </h3>
+<p id="section-5.1-1">
+          The RASA object MUST be validated according to <span>[<a href="#RFC6488" class="cite xref">RFC6488</a>]</span>:<a href="#section-5.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.1-2">
+          <li id="section-5.1-2.1">Verify the CMS signature using the signer's certificate<a href="#section-5.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.1-2.2">Verify the certificate chain to a trust anchor<a href="#section-5.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.1-2.3">Verify the certificate's subject matches the containingAS<a href="#section-5.1-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.1-2.4">Verify the validity period (notBefore, notAfter)<a href="#section-5.1-2.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.1-2.5">Check for revocation using CRLs or OCSP<a href="#section-5.1-2.5" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="content-validation">
+<section id="section-5.2">
+        <h3 id="name-content-validation">
+<a href="#section-5.2" class="section-number selfRef">5.2. </a><a href="#name-content-validation" class="section-name selfRef">Content Validation</a>
+        </h3>
+<p id="section-5.2-1">
+          In addition to signature validation, the RASA content MUST be
+          validated for conformance to this specification:<a href="#section-5.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.2-2">
+          <li id="section-5.2-2.1">
+            The asSetName MUST start with "AS-" (case-insensitive). RASA
+            objects with asSetName not conforming to RFC2622 naming
+            conventions MUST be rejected. This prevents namespace collisions
+            between AS-SETs and autonomous system numbers.<a href="#section-5.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.2-2.2">
+            For hierarchical AS-SET names (e.g., "AS1299:AS-TWELVE99"), the
+            ASN component MUST match the containingAS field.<a href="#section-5.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.2-2.3">
+            The members list MUST contain only valid ASNs (no AS-SET names
+            in the members list; nested AS-SETs are handled via expansion).<a href="#section-5.2-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.2-2.4">
+            All ASIDs in the members list MUST be sorted in ascending order
+            with no duplicates.<a href="#section-5.2-2.4" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="as-set-expansion">
+<section id="section-5.3">
+        <h3 id="name-as-set-expansion-with-rasa">
+<a href="#section-5.3" class="section-number selfRef">5.3. </a><a href="#name-as-set-expansion-with-rasa" class="section-name selfRef">AS-SET Expansion with RASA</a>
+        </h3>
+<p id="section-5.3-1">
+          When expanding an AS-SET for route filter generation, RPKI-aware
+          tools SHOULD perform the following algorithm:<a href="#section-5.3-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-5.3-2">
+          <li id="section-5.3-2.1">
+            Query RPKI for a RASA object for the AS-SET. If a valid RASA
+            exists and the authoritative flag is set, use ONLY the RASA
+            member list. Do NOT query IRR for this AS-SET. The IRR object
+            is treated as deprecated/non-authoritative.<a href="#section-5.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.3-2.2">
+            If a valid RASA exists but authoritative is NOT set, determine
+            the IRR database(s) to query: if irrSource is specified, query
+            ONLY that database. If irrSource is absent, query all configured
+            IRR databases. Merge the RASA member list with the IRR member list.<a href="#section-5.3-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.3-2.3">
+            If no valid RASA exists, query IRR using the same database
+            selection logic (irrSource if present, otherwise all databases).<a href="#section-5.3-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.3-2.4">
+            For each nested AS-SET in the member list, first verify if
+            the nested AS-SET has published a RASA-AUTH (version 1 with
+            authorizedSet). If so, verify the current AS-SET name is in
+            the authorizedIn list. If not authorized, skip the nested AS-SET
+            and log a warning. If authorized (or no RASA-AUTH exists), recurse
+            using the same algorithm. If the parent AS-SET has doNotInherit set,
+            include only the AS-SET reference (not its members) in the
+            expansion.<a href="#section-5.3-2.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-5.3-2.5">
+            For each member ASN, verify if a RASA object exists that lists
+            this AS-SET as authorized. If the ASN has published a RASA and
+            this AS-SET is not in the authorized list, log a warning or
+            exclude the ASN based on policy.<a href="#section-5.3-2.5" class="pilcrow">¶</a>
+</li>
+        </ol>
+<p id="section-5.3-3">
+          The irrSource field prevents namespace ambiguity attacks where the
+          same AS-SET name exists in multiple IRR databases with different
+          members. When specified, tools MUST NOT query other IRR databases.<a href="#section-5.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="conflict-resolution">
+<section id="section-6">
+      <h2 id="name-conflict-resolution">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-conflict-resolution" class="section-name selfRef">Conflict Resolution</a>
+      </h2>
+<p id="section-6-1">
+        When both RASA-SET and RASA-AUTH objects exist for the same
+        AS-SET membership claim, validators MUST apply the following
+        resolution rules to determine the authoritative membership list.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<div id="priority-rules">
+<section id="section-6.1">
+        <h3 id="name-priority-rules">
+<a href="#section-6.1" class="section-number selfRef">6.1. </a><a href="#name-priority-rules" class="section-name selfRef">Priority Rules</a>
+        </h3>
+<p id="section-6.1-1">
+          RASA-AUTH (member's intent) takes precedence over RASA-SET
+          (owner's claim). The rationale is that an AS should have
+          control over which AS-SETs include it, as inclusion affects
+          their routing security.<a href="#section-6.1-1" class="pilcrow">¶</a></p>
+<p id="section-6.1-2">
+          <strong>Resolution Algorithm:</strong><a href="#section-6.1-2" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-6.1-3">
+          <li id="section-6.1-3.1">
+            For each member ASN claimed in RASA-SET.members, check if a
+            RASA-AUTH object exists signed by that ASN.<a href="#section-6.1-3.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-6.1-3.2">
+            If RASA-AUTH exists: verify this AS-SET name is in the
+            RASA-AUTH.authorizedIn list. If present, include the ASN.
+            If absent, exclude the ASN (member has not authorized).<a href="#section-6.1-3.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-6.1-3.3">
+            If RASA-AUTH exists and strictMode is set to TRUE, exclude
+            the ASN and log a security event (unauthorized inclusion).<a href="#section-6.1-3.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-6.1-3.4">
+            If RASA-AUTH exists and strictMode is FALSE, exclude the
+            ASN but log a warning (member may not want inclusion).<a href="#section-6.1-3.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-6.1-3.5">
+            If no RASA-AUTH exists, include the ASN if the AS-SET
+            owner's RASA-SET is valid.<a href="#section-6.1-3.5" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="conflict-examples">
+<section id="section-6.2">
+        <h3 id="name-conflict-examples">
+<a href="#section-6.2" class="section-number selfRef">6.2. </a><a href="#name-conflict-examples" class="section-name selfRef">Conflict Examples</a>
+        </h3>
+<p id="section-6.2-1">
+          Example 1: Member authorizes inclusion<a href="#section-6.2-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-6.2-2">
+<pre>
+RASA-SET (AS2914 publishes):
+  asSetName: "AS2914:AS-GLOBAL"
+  members: [AS64496, AS64497, AS15169]
+
+RASA-AUTH (AS15169 publishes):
+  authorizedAS: 15169
+  authorizedIn: ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99"]
+  strictMode: FALSE
+
+Result: AS15169 is INCLUDED (authorized)
+</pre><a href="#section-6.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2-3">
+          Example 2: Member does not authorize inclusion<a href="#section-6.2-3" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-6.2-4">
+<pre>
+RASA-SET (AS-EVIL publishes):
+  asSetName: "AS-EVIL:CUSTOMERS"
+  members: [AS64496, AS15169]
+
+RASA-AUTH (AS15169 publishes):
+  authorizedAS: 15169
+  authorizedIn: ["AS2914:AS-GLOBAL"]
+  strictMode: TRUE
+
+Result: AS15169 is EXCLUDED (not authorized), security event logged
+</pre><a href="#section-6.2-4" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2-5">
+          Example 3: No RASA-AUTH from member<a href="#section-6.2-5" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-6.2-6">
+<pre>
+RASA-SET (AS2914 publishes):
+  asSetName: "AS2914:AS-GLOBAL"
+  members: [AS64496, AS64497, AS398465]
+
+RASA-AUTH (AS398465): None published
+
+Result: AS398465 is INCLUDED (no objection from member)
+</pre><a href="#section-6.2-6" class="pilcrow">¶</a>
+</div>
+<p id="section-6.2-7">
+          Example 4: AS-SET authorization (version 1 CHOICE)<a href="#section-6.2-7" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-6.2-8">
+<pre>
+RASA-SET (AS2914 publishes):
+  asSetName: "AS2914:AS-GLOBAL"
+  nestedSets: ["AS1299:AS-TWELVE99"]
+
+RASA-AUTH (AS1299 publishes, version 1):
+  version: 1
+  authorizedEntity:
+    authorizedSet: "AS1299:AS-TWELVE99"
+  authorizedIn: ["AS2914:AS-GLOBAL"]
+  strictMode: TRUE
+
+Result: AS1299:AS-TWELVE99 is INCLUDED (authorized)
+
+Example 5: AS-SET authorization denied
+RASA-SET (AS-EVIL publishes):
+  asSetName: "AS-EVIL:CUSTOMERS"
+  nestedSets: ["AS1299:AS-TWELVE99"]
+
+RASA-AUTH (AS1299 publishes, version 1):
+  version: 1
+  authorizedEntity:
+    authorizedSet: "AS1299:AS-TWELVE99"
+  authorizedIn: ["AS2914:AS-GLOBAL"]
+  strictMode: TRUE
+
+Result: AS1299:AS-TWELVE99 is EXCLUDED (not authorized in AS-EVIL)
+</pre><a href="#section-6.2-8" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="circular-detection">
+<section id="section-7">
+      <h2 id="name-circular-reference-detectio">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-circular-reference-detectio" class="section-name selfRef">Circular Reference Detection</a>
+      </h2>
+<p id="section-7-1">
+        RASA-SET objects support nested AS-SET references via the nestedSets
+        field. This creates the potential for circular references if an
+        AS-SET includes itself, directly or indirectly.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">
+        Validators MUST detect and handle circular references to prevent
+        infinite loops during AS-SET expansion.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<div id="detection-algorithm">
+<section id="section-7.1">
+        <h3 id="name-detection-algorithm">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-detection-algorithm" class="section-name selfRef">Detection Algorithm</a>
+        </h3>
+<p id="section-7.1-1">
+          During AS-SET expansion, validators MUST maintain a "seen" set
+          containing all AS-SET names encountered in the current expansion
+          chain.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-7.1-2">
+          <li id="section-7.1-2.1">
+            Initialize an empty set 'seen' before expanding an AS-SET.<a href="#section-7.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.2">
+            Before expanding any AS-SET (via RASA-SET or IRR), check if
+            its name is already in 'seen'.<a href="#section-7.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.3">
+            If yes: circular reference detected. Stop expanding this
+            branch and log a warning. Do not include any members from
+            the circular AS-SET.<a href="#section-7.1-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.4">
+            If no: add the AS-SET name to 'seen' and continue expansion.<a href="#section-7.1-2.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-7.1-2.5">
+            When backtracking from a nested AS-SET, remove its name from
+            'seen' to allow valid reuse in different branches.<a href="#section-7.1-2.5" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="circular-example">
+<section id="section-7.2">
+        <h3 id="name-circular-reference-example">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-circular-reference-example" class="section-name selfRef">Circular Reference Example</a>
+        </h3>
+<div class="lang-text sourcecode" id="section-7.2-1">
+<pre>
+RASA-SET (AS2914):
+  asSetName: "AS2914:AS-GLOBAL"
+  members: [AS64496]
+  nestedSets: ["AS64496:AS-SET"]
+
+RASA-SET (AS64496):
+  asSetName: "AS64496:AS-SET"
+  members: [AS398465]
+  nestedSets: ["AS2914:AS-GLOBAL"]  -- circular!
+
+Expansion trace:
+1. Start: AS2914:AS-GLOBAL (seen={})
+2. Add AS2914:AS-GLOBAL to seen
+3. Expand AS64496:AS-SET (seen={AS2914:AS-GLOBAL})
+4. Add AS64496:AS-SET to seen
+5. Attempt to expand AS2914:AS-GLOBAL
+6. Detect: AS2914:AS-GLOBAL already in seen
+7. Log warning, stop expansion, return [AS64496] only
+</pre><a href="#section-7.2-1" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="use-cases">
+<section id="section-8">
+      <h2 id="name-use-cases">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-use-cases" class="section-name selfRef">Use Cases</a>
+      </h2>
+<div id="content-provider">
+<section id="section-8.1">
+        <h3 id="name-content-provider-protection">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-content-provider-protection" class="section-name selfRef">Content Provider Protection</a>
+        </h3>
+<p id="section-8.1-1">
+          Google (AS15169) wants to ensure it is only included in specific
+          Tier-1 provider AS-SETs:<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-8.1-2">
+<pre>
+RASA Object (signed by AS15169):
+  asSetName:     "AS15169:AS-GOOGLE"
+  containingAS:  15169
+  members:       [15169, 16509, 36040, 36384]
+  flags:         doNotInherit(0) = TRUE
+</pre><a href="#section-8.1-2" class="pilcrow">¶</a>
+</div>
+<p id="section-8.1-3">
+          Now when a malicious AS-SET includes AS15169:AS-GOOGLE, expansion stops
+          at the AS-SET reference and does not include Google's actual
+          ASNs, preventing route leaks.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="tier1-protection">
+<section id="section-8.2">
+        <h3 id="name-tier-1-provider-protection">
+<a href="#section-8.2" class="section-number selfRef">8.2. </a><a href="#name-tier-1-provider-protection" class="section-name selfRef">Tier-1 Provider Protection</a>
+        </h3>
+<p id="section-8.2-1">
+          Arelion (AS1299) wants to protect its customer AS-SET:<a href="#section-8.2-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-8.2-2">
+<pre>
+RASA Object (signed by AS1299):
+  asSetName:     "AS1299:AS-TWELVE99"
+  containingAS:  1299
+  members:       [64496, 64497, 64498, 64499, ...]
+  flags:         doNotInherit(0) = TRUE,
+                 authoritative(1) = TRUE
+</pre><a href="#section-8.2-2" class="pilcrow">¶</a>
+</div>
+<p id="section-8.2-3">
+          The authoritative flag tells tools to use this RASA member list
+          instead of the IRR data. The doNotInherit flag prevents
+          transitive inclusion attacks.<a href="#section-8.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="enterprise">
+<section id="section-8.3">
+        <h3 id="name-enterprise-multi-asn">
+<a href="#section-8.3" class="section-number selfRef">8.3. </a><a href="#name-enterprise-multi-asn" class="section-name selfRef">Enterprise Multi-ASN</a>
+        </h3>
+<p id="section-8.3-1">
+          An enterprise with multiple ASNs wants consistent authorization:<a href="#section-8.3-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-8.3-2">
+<pre>
+RASA Object (signed by enterprise AS):
+  asSetName:     "AS64501:AS-ENTERPRISE"
+  containingAS:  64501
+  members:       [64501, 64502, 64503]
+  flags:         authoritative(1) = TRUE
+</pre><a href="#section-8.3-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="namespace-binding">
+<section id="section-8.4">
+        <h3 id="name-irr-namespace-binding">
+<a href="#section-8.4" class="section-number selfRef">8.4. </a><a href="#name-irr-namespace-binding" class="section-name selfRef">IRR Namespace Binding</a>
+        </h3>
+<p id="section-8.4-1">
+          Hurricane Electric (AS6939) wants to prevent namespace ambiguity
+          attacks where AS6939:AS-HURRICANE exists in multiple IRR databases:<a href="#section-8.4-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-8.4-2">
+<pre>
+RASA Object (signed by AS6939):
+  asSetName:     "AS6939:AS-HURRICANE"
+  containingAS:  6939
+  irrSource:     "RADB"
+  members:       [6939, 1, 2, 3, ...]
+  flags:         authoritative(1) = TRUE,
+                 doNotInherit(0) = TRUE
+</pre><a href="#section-8.4-2" class="pilcrow">¶</a>
+</div>
+<p id="section-8.4-3">
+          The irrSource field locks AS6939:AS-HURRICANE to the RADB database only.
+          Tools will NOT query RIPE, ARIN, or other databases for this AS-SET.
+          This prevents attackers from registering AS6939:AS-HURRICANE in other
+          databases with malicious members.<a href="#section-8.4-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="security">
+<section id="section-9">
+      <h2 id="name-security-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-9-1">
+        RASA provides cryptographic assurance of AS-SET membership, but
+        several security considerations apply:<a href="#section-9-1" class="pilcrow">¶</a></p>
+<div id="key-management">
+<section id="section-9.1">
+        <h3 id="name-rpki-key-management">
+<a href="#section-9.1" class="section-number selfRef">9.1. </a><a href="#name-rpki-key-management" class="section-name selfRef">RPKI Key Management</a>
+        </h3>
+<p id="section-9.1-1">
+          The security of RASA depends on proper RPKI key management:<a href="#section-9.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-9.1-2.1">
+            AS operators must secure their RPKI private keys. A compromised
+            key allows an attacker to create fraudulent RASA objects.<a href="#section-9.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-9.1-2.2">
+            RASA objects should be published promptly to minimize windows
+            where IRR data is authoritative.<a href="#section-9.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-9.1-2.3">
+            Relying parties must validate RASA objects according to RPKI
+            policies and check revocation status.<a href="#section-9.1-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="partial-deployment">
+<section id="section-9.2">
+        <h3 id="name-partial-deployment">
+<a href="#section-9.2" class="section-number selfRef">9.2. </a><a href="#name-partial-deployment" class="section-name selfRef">Partial Deployment</a>
+        </h3>
+<p id="section-9.2-1">
+          During partial deployment, some AS-SETs will not have RASA objects.
+          Tools SHOULD:<a href="#section-9.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-9.2-2.1">
+            Default to IRR data when RASA is unavailable (backward
+            compatibility)<a href="#section-9.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-9.2-2.2">
+            Provide configuration options to require RASA for specific
+            AS-SETs or all AS-SETs<a href="#section-9.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-9.2-2.3">
+            Log warnings when falling back to IRR for high-value AS-SETs<a href="#section-9.2-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="chain-attacks">
+<section id="section-9.3">
+        <h3 id="name-chain-attack-mitigation">
+<a href="#section-9.3" class="section-number selfRef">9.3. </a><a href="#name-chain-attack-mitigation" class="section-name selfRef">Chain Attack Mitigation</a>
+        </h3>
+<p id="section-9.3-1">
+          The doNotInherit flag mitigates transitive chain attacks. However,
+          if an AS-SET owner does not set this flag, their members remain
+          vulnerable to transitive inclusion. AS-SET owners should carefully
+          consider whether their AS-SET should be transitively inheritable.<a href="#section-9.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="chain-of-trust">
+<section id="section-9.4">
+        <h3 id="name-chain-of-trust-limitations">
+<a href="#section-9.4" class="section-number selfRef">9.4. </a><a href="#name-chain-of-trust-limitations" class="section-name selfRef">Chain-of-Trust Limitations</a>
+        </h3>
+<p id="section-9.4-1">
+          RASA provides cryptographic verification of individual AS-SETs, but
+          a fundamental limitation remains: AS-SET expansion is transitive.
+          When AS-SET A contains AS-SET B, and B contains AS-SET C, then A
+          implicitly contains all members of C.<a href="#section-9.4-1" class="pilcrow">¶</a></p>
+<p id="section-9.4-2">
+          This creates a chain-of-trust problem: an attacker who compromises
+          any AS-SET in the expansion chain can include arbitrary ASNs. For
+          example, if a malicious actor creates AS-EVIL containing AS15169:AS-GOOGLE,
+          and AS15169:AS-GOOGLE has not set the doNotInherit flag, then AS-EVIL
+          inherits all Google ASNs.<a href="#section-9.4-2" class="pilcrow">¶</a></p>
+<p id="section-9.4-3">
+          <strong>Critical Requirement:</strong> For full security, every
+          AS-SET in the expansion chain must protect itself. If any AS-SET
+          in the chain lacks RASA protection or does not set doNotInherit,
+          the entire chain remains vulnerable to transitive attacks.<a href="#section-9.4-3" class="pilcrow">¶</a></p>
+<p id="section-9.4-4">
+          This limitation is not unique to RASA - it affects all AS-SET-based
+          routing, including IRR-based AS-SETs. The difference is that RASA
+          provides a mechanism (doNotInherit) for AS-SET owners to break the
+          chain. Full protection requires widespread adoption at the internet
+          core: Tier-1 providers and major content networks must publish RASA
+          objects with appropriate flags.<a href="#section-9.4-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="deployment">
+<section id="section-10">
+      <h2 id="name-deployment-considerations">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-deployment-considerations" class="section-name selfRef">Deployment Considerations</a>
+      </h2>
+<p id="section-10-1">
+        RASA is designed for incremental deployment:<a href="#section-10-1" class="pilcrow">¶</a></p>
+<div id="phase1">
+<section id="section-10.1">
+        <h3 id="name-phase-1-high-value-as-sets">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-phase-1-high-value-as-sets" class="section-name selfRef">Phase 1: High-Value AS-SETs</a>
+        </h3>
+<p id="section-10.1-1">
+          Content providers (Google, Microsoft, Amazon) and Tier-1 transit
+          providers publish RASA objects for their AS-SETs. Tools begin
+          supporting RASA verification. Even with partial adoption, operators
+          gain cryptographic assurance for high-value AS-SETs.<a href="#section-10.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="phase2">
+<section id="section-10.2">
+        <h3 id="name-phase-2-tool-integration">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-phase-2-tool-integration" class="section-name selfRef">Phase 2: Tool Integration</a>
+        </h3>
+<p id="section-10.2-1">
+          bgpq4 and other IRR tools add RASA support. RPKI validators
+          (Routinator, rpki-client) add RASA publication and query APIs.
+          Network operators can enable strict RASA modes.<a href="#section-10.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="phase3">
+<section id="section-10.3">
+        <h3 id="name-phase-3-widespread-adoption">
+<a href="#section-10.3" class="section-number selfRef">10.3. </a><a href="#name-phase-3-widespread-adoption" class="section-name selfRef">Phase 3: Widespread Adoption</a>
+        </h3>
+<p id="section-10.3-1">
+          Industry standard to publish RASA objects for all AS-SETs.
+          IRR databases may automatically generate RASA objects from
+          authenticated updates. Route filter generation defaults to
+          RASA-verified mode.<a href="#section-10.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="aspa-synthesis">
+<section id="section-10.4">
+        <h3 id="name-alternative-aspa-synthesis">
+<a href="#section-10.4" class="section-number selfRef">10.4. </a><a href="#name-alternative-aspa-synthesis" class="section-name selfRef">Alternative: ASPA Synthesis</a>
+        </h3>
+<p id="section-10.4-1">
+          An alternative approach to AS-SET authorization uses existing ASPA
+          <span>[<a href="#I-D.aspa" class="cite xref">I-D.aspa</a>]</span> objects to synthesize AS-SET membership.
+          Rather than creating new RASA objects, operators can derive AS-SET
+          contents from the provider relationships already published in RPKI.<a href="#section-10.4-1" class="pilcrow">¶</a></p>
+<p id="section-10.4-2">
+          <strong>Concept:</strong> If multiple ASNs list AS2914 as their
+          provider in ASPA objects, an operator can synthesize an AS-SET
+          "RPKI::AS2914:AS-CUSTOMERS" containing those ASNs. This is analogous
+          to RIPE-731, which uses ROAs to validate route objects.<a href="#section-10.4-2" class="pilcrow">¶</a></p>
+<p id="section-10.4-3">
+          <strong>Advantages:</strong><a href="#section-10.4-3" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-10.4-4.1">Uses existing ASPA objects (1000+ already published)<a href="#section-10.4-4.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.4-4.2">No new object types or infrastructure required<a href="#section-10.4-4.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.4-4.3">Leverages existing RPKI validation infrastructure<a href="#section-10.4-4.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.4-4.4">Immediate deployment possible with existing data<a href="#section-10.4-4.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-10.4-5">
+          <strong>Limitations:</strong><a href="#section-10.4-5" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-10.4-6.1">Only captures provider-customer relationships, not arbitrary groupings<a href="#section-10.4-6.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.4-6.2">Requires all members to publish ASPA objects<a href="#section-10.4-6.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.4-6.3">No mechanism for opt-out or complex membership rules<a href="#section-10.4-6.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-10.4-6.4">Cannot represent non-transit relationships (peers, IXPs, etc.)<a href="#section-10.4-6.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-10.4-7">
+          ASPA synthesis is complementary to RASA. Operators may use ASPA-derived
+          AS-SETs for provider-customer relationships while using RASA for
+          complex multi-lateral groupings.<a href="#section-10.4-7" class="pilcrow">¶</a></p>
+<div id="aspa-algorithm">
+<section id="section-10.4.1">
+          <h4 id="name-aspa-synthesis-algorithm">
+<a href="#section-10.4.1" class="section-number selfRef">10.4.1. </a><a href="#name-aspa-synthesis-algorithm" class="section-name selfRef">ASPA Synthesis Algorithm</a>
+          </h4>
+<p id="section-10.4.1-1">
+            The following algorithm synthesizes an AS-SET from ASPA objects:<a href="#section-10.4.1-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-10.4.1-2">
+<pre>
+Algorithm: Synthesize AS-SET from ASPA
+Input: providerAS (the AS whose customers to find)
+Output: memberSet (set of ASNs listing providerAS as provider)
+
+1. Query RPKI for all valid ASPA objects
+2. Initialize empty memberSet
+3. For each ASPA object in RPKI:
+   a. Extract customerAS from ASPA
+   b. Extract providerAS list from ASPA
+   c. If providerAS is in the provider list:
+      i. Add customerAS to memberSet
+4. Return memberSet
+
+Example: Synthesize AS2914's customer AS-SET
+Input: providerAS = 2914
+
+ASPA objects found:
+  - AS64496: providers = [2914, 1299]
+  - AS64497: providers = [2914, 3356]
+  - AS64498: providers = [1299, 3356]
+  - AS64499: providers = [2914]
+
+Result: memberSet = {64496, 64497, 64499}
+  (AS64498 not included - doesn't list 2914 as provider)
+
+Generated AS-SET name: "RPKI::AS2914:AS-CUSTOMERS"
+</pre><a href="#section-10.4.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="aspa-rasa-integration">
+<section id="section-10.4.2">
+          <h4 id="name-aspa-rasa-integration-model">
+<a href="#section-10.4.2" class="section-number selfRef">10.4.2. </a><a href="#name-aspa-rasa-integration-model" class="section-name selfRef">ASPA-RASA Integration Model</a>
+          </h4>
+<p id="section-10.4.2-1">
+            The complementary relationship between ASPA synthesis and RASA can
+            be expressed as follows:<a href="#section-10.4.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-10.4.2-2.1">
+              <strong>ASPA-derived AS-SETs</strong> represent provider-customer
+              relationships discovered from ASPA objects. These are dynamic -
+              membership changes as ASPAs are published or withdrawn.<a href="#section-10.4.2-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-10.4.2-2.2">
+              <strong>RASA objects</strong> represent explicit AS-SET membership
+              declarations with additional metadata (flags, authorization).<a href="#section-10.4.2-2.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-10.4.2-2.3">
+              <strong>Unified view</strong>: A validator MAY combine both sources,
+              using RASA objects for AS-SETs that have them, and ASPA-synthesized
+              AS-SETs for provider relationships.<a href="#section-10.4.2-2.3" class="pilcrow">¶</a>
+</li>
+          </ul>
+<p id="section-10.4.2-3">
+            <strong>RIPE-731 Analogy:</strong> Just as RIPE-731 uses ROAs to
+            validate route objects (origin AS + prefix), RASA uses ASPAs to
+            validate AS-SET membership (provider AS + customer AS). The key
+            insight is that existing RPKI objects can authenticate IRR-style
+            groupings without requiring new object types for every use case.<a href="#section-10.4.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="aspa-limitations-detailed">
+<section id="section-10.4.3">
+          <h4 id="name-detailed-aspa-synthesis-lim">
+<a href="#section-10.4.3" class="section-number selfRef">10.4.3. </a><a href="#name-detailed-aspa-synthesis-lim" class="section-name selfRef">Detailed ASPA Synthesis Limitations</a>
+          </h4>
+<p id="section-10.4.3-1">
+            While ASPA synthesis provides immediate value, operators should
+            understand its constraints:<a href="#section-10.4.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-10.4.3-2.1">
+              <strong>Publication requirement:</strong> Only ASNs that have
+              published ASPA objects can be discovered. Transit providers must
+              educate customers about ASPA publication.<a href="#section-10.4.3-2.1" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-10.4.3-2.2">
+              <strong>Multi-homing complexity:</strong> A customer with multiple
+              providers appears in multiple synthesized AS-SETs. This is
+              semantically correct but may be operationally complex.<a href="#section-10.4.3-2.2" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-10.4.3-2.3">
+              <strong>No transitive closure:</strong> Unlike RASA nestedSets,
+              ASPA synthesis does not naturally support nested groupings. Each
+              synthesized AS-SET contains only direct customers.<a href="#section-10.4.3-2.3" class="pilcrow">¶</a>
+</li>
+            <li class="normal" id="section-10.4.3-2.4">
+              <strong>Versioning challenges:</strong> ASPA objects have their
+              own validity periods separate from any AS-SET interpretation.
+              Operators must track ASPA expiry independently.<a href="#section-10.4.3-2.4" class="pilcrow">¶</a>
+</li>
+          </ul>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="operational-guidance">
+<section id="section-11">
+      <h2 id="name-operational-guidance">
+<a href="#section-11" class="section-number selfRef">11. </a><a href="#name-operational-guidance" class="section-name selfRef">Operational Guidance</a>
+      </h2>
+<p id="section-11-1">
+        This section provides practical guidance for network operators
+        deploying RASA in production environments.<a href="#section-11-1" class="pilcrow">¶</a></p>
+<div id="publishing">
+<section id="section-11.1">
+        <h3 id="name-publishing-rasa-objects">
+<a href="#section-11.1" class="section-number selfRef">11.1. </a><a href="#name-publishing-rasa-objects" class="section-name selfRef">Publishing RASA Objects</a>
+        </h3>
+<p id="section-11.1-1">
+          To publish a RASA object, an AS operator must:<a href="#section-11.1-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-11.1-2">
+          <li id="section-11.1-2.1">
+            Generate a RPKI certificate for their AS if not already available
+            through their Regional Internet Registry (RIR).<a href="#section-11.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.1-2.2">
+            Create the RASA content specifying the AS-SET name, containing AS,
+            member list, and appropriate flags.<a href="#section-11.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.1-2.3">
+            Sign the RASA object using their RPKI private key via CMS
+            <span>[<a href="#RFC5652" class="cite xref">RFC5652</a>]</span>.<a href="#section-11.1-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.1-2.4">
+            Publish the signed RASA object to their RPKI repository,
+            typically via their RIR's publication service or a private
+            repository if using delegated RPKI.<a href="#section-11.1-2.4" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.1-2.5">
+            Ensure the RASA object is included in the repository manifest
+            and available via rsync or RRDP.<a href="#section-11.1-2.5" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="consuming">
+<section id="section-11.2">
+        <h3 id="name-consuming-rasa-objects">
+<a href="#section-11.2" class="section-number selfRef">11.2. </a><a href="#name-consuming-rasa-objects" class="section-name selfRef">Consuming RASA Objects</a>
+        </h3>
+<p id="section-11.2-1">
+          Operators generating route filters SHOULD integrate RASA validation
+          into their existing IRR tools:<a href="#section-11.2-1" class="pilcrow">¶</a></p>
+<ol start="1" type="1" class="normal type-1" id="section-11.2-2">
+          <li id="section-11.2-2.1">
+            Query RPKI repositories for RASA objects alongside IRR AS-SET
+            queries.<a href="#section-11.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.2-2.2">
+            Validate RASA signatures using standard RPKI validation libraries
+            (e.g., rpki-client, Routinator).<a href="#section-11.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.2-2.3">
+            Apply RASA flags during AS-SET expansion. Honor doNotInherit
+            to prevent transitive inclusion. Prefer authoritative RASA
+            member lists over IRR data. Fall back to IRR data when RASA
+            is unavailable.<a href="#section-11.2-2.3" class="pilcrow">¶</a>
+</li>
+          <li id="section-11.2-2.4">
+            Log validation failures and policy decisions for auditing.<a href="#section-11.2-2.4" class="pilcrow">¶</a>
+</li>
+        </ol>
+</section>
+</div>
+<div id="monitoring">
+<section id="section-11.3">
+        <h3 id="name-monitoring-and-alerting">
+<a href="#section-11.3" class="section-number selfRef">11.3. </a><a href="#name-monitoring-and-alerting" class="section-name selfRef">Monitoring and Alerting</a>
+        </h3>
+<p id="section-11.3-1">
+          Operators SHOULD monitor RASA validation status:<a href="#section-11.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-11.3-2.1">
+            Track RASA objects for critical AS-SETs (content providers,
+            Tier-1 providers) and alert on validation failures.<a href="#section-11.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-11.3-2.2">
+            Monitor RASA object expiration dates and alert before expiry.<a href="#section-11.3-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-11.3-2.3">
+            Log fallback events when reverting to IRR data due to missing
+            or invalid RASA objects.<a href="#section-11.3-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-11.3-2.4">
+            Track unexpected AS-SET membership changes detected during
+            RASA validation.<a href="#section-11.3-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="operational-examples">
+<section id="section-11.4">
+        <h3 id="name-detailed-operational-exampl">
+<a href="#section-11.4" class="section-number selfRef">11.4. </a><a href="#name-detailed-operational-exampl" class="section-name selfRef">Detailed Operational Examples</a>
+        </h3>
+<div id="example-tier1-customer">
+<section id="section-11.4.1">
+          <h4 id="name-example-1-tier-1-provider-c">
+<a href="#section-11.4.1" class="section-number selfRef">11.4.1. </a><a href="#name-example-1-tier-1-provider-c" class="section-name selfRef">Example 1: Tier-1 Provider Customer AS-SET</a>
+          </h4>
+<p id="section-11.4.1-1">
+            NTT (AS2914) maintains AS2914:AS-GLOBAL containing their customer
+            ASNs. Here's the complete operational workflow:<a href="#section-11.4.1-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-11.4.1-2">
+<pre>
+Step 1: NTT publishes RASA-SET
+  asSetName:     "AS2914:AS-GLOBAL"
+  containingAS:  2914
+  members:       [AS64496, AS64497, AS64498, AS64499, AS64500]
+  nestedSets:    ["AS64496:AS-SET", "AS64497:AS-SET"]
+  flags:         authoritative=TRUE, doNotInherit=FALSE
+  irrSource:     "RADB"
+  validity:      2024-01-01 to 2025-01-01
+
+Step 2: Customer AS64496 publishes RASA-AUTH
+  authorizedAS:  64496
+  authorizedIn:  ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99"]
+  strictMode:    FALSE
+  validity:      2024-01-01 to 2025-01-01
+
+Step 3: Customer AS64497 publishes RASA-AUTH
+  authorizedAS:  64497
+  authorizedIn:  ["AS2914:AS-GLOBAL"]
+  strictMode:    TRUE
+  validity:      2024-01-01 to 2025-01-01
+
+Step 4: Customer AS64498 does NOT publish RASA-AUTH
+  (No objection, included by default)
+
+Step 5: Attacker AS-EVIL attempts unauthorized inclusion
+  RASA-SET (AS-EVIL):
+    asSetName: "AS-EVIL:CUSTOMERS"
+    members:   [AS64496, AS64497, AS2914]  -- attempting to include NTT!
+
+Result: AS2914 excluded (AS-EVIL not in AS2914's authorizedIn list)
+</pre><a href="#section-11.4.1-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-content-protection">
+<section id="section-11.4.2">
+          <h4 id="name-example-2-content-provider-">
+<a href="#section-11.4.2" class="section-number selfRef">11.4.2. </a><a href="#name-example-2-content-provider-" class="section-name selfRef">Example 2: Content Provider Multi-AS Protection</a>
+          </h4>
+<p id="section-11.4.2-1">
+            Google operates multiple ASNs and wants to control which Tier-1
+            providers can include them:<a href="#section-11.4.2-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-11.4.2-2">
+<pre>
+Google publishes RASA-SET for their aggregated AS-SET:
+  asSetName:     "AS15169:AS-GOOGLE"
+  containingAS:  15169
+  members:       [15169, 16509, 36040, 36384, 139190]
+  flags:         authoritative=TRUE, doNotInherit=TRUE
+
+Google publishes RASA-AUTH for each ASN:
+  authorizedAS:  15169
+  authorizedIn:  ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99",
+                  "AS6453:AS-TATA", "AS3356:AS-LEVEL3"]
+  strictMode:    TRUE
+
+  authorizedAS:  16509  (AWS)
+  authorizedIn:  ["AS2914:AS-GLOBAL", "AS1299:AS-TWELVE99"]
+  strictMode:    TRUE
+
+Result: Google's AS-SET can only be expanded by authorized Tier-1s.
+Any attempt by malicious AS-SETs to include AS15169:AS-GOOGLE will
+stop at the AS-SET reference (doNotInherit=TRUE) without revealing
+the actual Google ASNs.
+</pre><a href="#section-11.4.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-validator-logic">
+<section id="section-11.4.3">
+          <h4 id="name-example-3-complete-validato">
+<a href="#section-11.4.3" class="section-number selfRef">11.4.3. </a><a href="#name-example-3-complete-validato" class="section-name selfRef">Example 3: Complete Validator Decision Flow</a>
+          </h4>
+<p id="section-11.4.3-1">
+            A router configuration generator encounters AS2914:AS-GLOBAL:<a href="#section-11.4.3-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-11.4.3-2">
+<pre>
+Validator processing AS2914:AS-GLOBAL:
+
+1. Query RPKI for RASA-SET "AS2914:AS-GLOBAL"
+   Found: Valid RASA-SET from AS2914
+   authoritative=TRUE, members=[64496, 64497, 64498]
+
+2. For each member, check RASA-AUTH:
+
+   Member AS64496:
+   - Query RPKI for RASA-AUTH from AS64496
+   - Found: authorizedIn contains "AS2914:AS-GLOBAL"
+   - Decision: INCLUDE (explicitly authorized)
+
+   Member AS64497:
+   - Query RPKI for RASA-AUTH from AS64497
+   - Found: authorizedIn does NOT contain "AS2914:AS-GLOBAL"
+   - strictMode=FALSE
+   - Decision: EXCLUDE (log warning)
+
+   Member AS64498:
+   - Query RPKI for RASA-AUTH from AS64498
+   - Not found
+   - Decision: INCLUDE (no objection)
+
+3. Process nestedSets (if doNotInherit=FALSE):
+   - For each nested AS-SET, repeat steps 1-2 recursively
+   - Track seen sets to detect circular references
+
+4. Final member list: [AS64496, AS64498]
+</pre><a href="#section-11.4.3-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="example-transition">
+<section id="section-11.4.4">
+          <h4 id="name-example-4-partial-deploymen">
+<a href="#section-11.4.4" class="section-number selfRef">11.4.4. </a><a href="#name-example-4-partial-deploymen" class="section-name selfRef">Example 4: Partial Deployment Scenario</a>
+          </h4>
+<p id="section-11.4.4-1">
+            During transition, some AS-SETs have RASA and others don't:<a href="#section-11.4.4-1" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-11.4.4-2">
+<pre>
+Operator wants to expand AS-HURRICANE (AS6939):
+
+Scenario A: AS6939 has published RASA-SET
+  - Query RPKI: Found valid RASA-SET
+  - authoritative=TRUE
+  - Action: Use RASA member list, ignore IRR
+  - IRR AS-HURRICANE treated as deprecated
+
+Scenario B: AS6939 has NOT published RASA-SET
+  - Query RPKI: No RASA found
+  - Action: Query IRR for AS-HURRICANE
+  - Log: "Falling back to IRR for AS-HURRICANE"
+  - Continue with IRR expansion
+
+Scenario C: Some members have RASA-AUTH, others don't
+  - AS6939:AS-HURRICANE contains [AS2914, AS64496, AS-UNKNOWN]
+  - AS2914: No RASA-AUTH found → included
+  - AS64496: Has RASA-AUTH, authorizes AS6939 → included
+  - AS-UNKNOWN: Nested AS-SET, no RASA → expanded from IRR
+
+Result: Mixed RASA/IRR expansion during transition period.
+</pre><a href="#section-11.4.4-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="asgroup-relationship">
+<section id="section-12">
+      <h2 id="name-relationship-to-asgroup">
+<a href="#section-12" class="section-number selfRef">12. </a><a href="#name-relationship-to-asgroup" class="section-name selfRef">Relationship to ASGroup</a>
+      </h2>
+<p id="section-12-1">
+        RASA builds upon the foundational work of Snijders and Korsbäck,
+        who proposed the ASGroup mechanism
+        <span>[<a href="#I-D.asgroup" class="cite xref">I-D.asgroup</a>]</span> in 2022. While ASGroup introduced
+        important concepts for RPKI-based AS-SET authorization, it expired
+        without achieving deployment. RASA represents an evolution of these
+        ideas with practical deployment considerations.<a href="#section-12-1" class="pilcrow">¶</a></p>
+<div id="asgroup-innovations">
+<section id="section-12.1">
+        <h3 id="name-asgroup-innovations">
+<a href="#section-12.1" class="section-number selfRef">12.1. </a><a href="#name-asgroup-innovations" class="section-name selfRef">ASGroup Innovations</a>
+        </h3>
+<p id="section-12.1-1">
+          ASGroup introduced several important concepts that influenced RASA:<a href="#section-12.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-12.1-2.1">
+            RPKI-signed AS group objects providing cryptographic verification
+            of membership.<a href="#section-12.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.1-2.2">
+            Separation between the containing AS (group owner) and member ASes.<a href="#section-12.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.1-2.3">
+            The concept of controlling transitive inclusion through the
+            referenceable flag.<a href="#section-12.1-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.1-2.4">
+            Recognition that IRR-based AS-SETs lack cryptographic verification.<a href="#section-12.1-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="rasa-simplifications">
+<section id="section-12.2">
+        <h3 id="name-rasa-simplifications">
+<a href="#section-12.2" class="section-number selfRef">12.2. </a><a href="#name-rasa-simplifications" class="section-name selfRef">RASA Simplifications</a>
+        </h3>
+<p id="section-12.2-1">
+          RASA addresses several factors that contributed to ASGroup's
+          complexity:<a href="#section-12.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-12.2-2.1">
+            <strong>Removed opt-out mechanism:</strong> ASGroup's separate
+            Opt-Out Listing objects added significant complexity to validation
+            and reasoning. RASA eliminates opt-out in favor of explicit
+            membership authorization via the member list.<a href="#section-12.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.2-2.2">
+            <strong>Simplified flag semantics:</strong> ASGroup's referenceable
+            boolean was replaced with doNotInherit, providing more intuitive
+            control over transitive inclusion.<a href="#section-12.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.2-2.3">
+            <strong>IRR compatibility:</strong> RASA is designed to work
+            alongside existing IRR infrastructure during transition,
+            whereas ASGroup appeared to be a complete replacement.<a href="#section-12.2-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-12.2-2.4">
+            <strong>Clear deployment path:</strong> RASA includes phased
+            deployment guidance with incremental adoption stages.<a href="#section-12.2-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="section-12.3">
+        <h3 id="name-acknowledgments">
+<a href="#section-12.3" class="section-number selfRef">12.3. </a><a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+        </h3>
+<p id="section-12.3-1">
+          The authors acknowledge Job Snijders and Fredrik Korsbäck for their
+          pioneering work on ASGroup, which established the foundation for
+          RPKI-based AS-SET authorization and identified the critical need
+          for cryptographic verification in routing policy.<a href="#section-12.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="irr-operator-considerations">
+<section id="section-13">
+      <h2 id="name-irr-operator-considerations">
+<a href="#section-13" class="section-number selfRef">13. </a><a href="#name-irr-operator-considerations" class="section-name selfRef">IRR Operator Considerations (To Be Investigated)</a>
+      </h2>
+<p id="section-13-1">
+        The introduction of RASA objects raises several open questions
+        regarding the relationship between RPKI-authenticated AS-SET data
+        and existing IRR database entries. This section documents known
+        issues and potential approaches without making definitive
+        recommendations, as operational experience is required to
+        determine best practices.<a href="#section-13-1" class="pilcrow">¶</a></p>
+<div id="irr-deletion-questions">
+<section id="section-13.1">
+        <h3 id="name-irr-object-deletion-vs-rete">
+<a href="#section-13.1" class="section-number selfRef">13.1. </a><a href="#name-irr-object-deletion-vs-rete" class="section-name selfRef">IRR Object Deletion vs Retention</a>
+        </h3>
+<p id="section-13.1-1">
+          When an AS-SET owner publishes a RASA object with the
+          authoritative flag set, questions arise regarding the fate of
+          the corresponding IRR AS-SET:<a href="#section-13.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-13.1-2.1">
+            <strong>Deletion:</strong> Should the IRR AS-SET be deleted?
+            Issues include: lack of cryptographic deletion in IRR,
+            persistence in mirrors, and potential breakage of legacy
+            tools that do not yet support RPKI.<a href="#section-13.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-13.1-2.2">
+            <strong>Retention:</strong> Should the IRR AS-SET be kept
+            indefinitely? Issues include: potential confusion when
+            IRR and RASA data diverge, and validators needing clear
+            precedence rules.<a href="#section-13.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-13.1-2.3">
+            <strong>Deprecation markers:</strong> Can IRR objects be
+            marked as deprecated? Issues include: lack of standardized
+            deprecation attributes in IRR, and varying support across
+            IRR database implementations.<a href="#section-13.1-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-13.1-3">
+          Further investigation is needed to understand operational
+          impacts and develop migration guidance.<a href="#section-13.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="irr-synchronization">
+<section id="section-13.2">
+        <h3 id="name-irr-rasa-synchronization">
+<a href="#section-13.2" class="section-number selfRef">13.2. </a><a href="#name-irr-rasa-synchronization" class="section-name selfRef">IRR-RASA Synchronization</a>
+        </h3>
+<p id="section-13.2-1">
+          If both IRR and RASA objects exist for the same AS-SET,
+          synchronization questions arise:<a href="#section-13.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-13.2-2.1">
+            <strong>Source of truth:</strong> When RASA authoritative
+            flag is set, validators use RASA. However, IRR databases
+            may serve stale data to legacy clients. Is dual
+            maintenance required during transition?<a href="#section-13.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-13.2-2.2">
+            <strong>Automated updates:</strong> Should IRR databases
+            automatically generate AS-SET objects from RASA data?
+            This would require significant IRR infrastructure changes
+            and trust in RPKI validation.<a href="#section-13.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-13.2-2.3">
+            <strong>Conflict detection:</strong> Should validators
+            detect when IRR and RASA data differ significantly?
+            What actions should be taken on detection?<a href="#section-13.2-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-13.2-3">
+          Operational deployment experience is needed to inform
+          synchronization strategies.<a href="#section-13.2-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="irr-transition-period">
+<section id="section-13.3">
+        <h3 id="name-transition-period-managemen">
+<a href="#section-13.3" class="section-number selfRef">13.3. </a><a href="#name-transition-period-managemen" class="section-name selfRef">Transition Period Management</a>
+        </h3>
+<p id="section-13.3-1">
+          The expected 5-10 year transition period raises operational
+          questions:<a href="#section-13.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-13.3-2.1">
+            <strong>Gradual adoption:</strong> How should operators
+            manage AS-SETs where some members have RASA objects and
+            others do not?<a href="#section-13.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-13.3-2.2">
+            <strong>Tool compatibility:</strong> How should networks
+            handle tools that only query IRR during the transition?<a href="#section-13.3-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-13.3-2.3">
+            <strong>Documentation:</strong> What documentation should
+            accompany RASA objects to guide IRR operators and users?<a href="#section-13.3-2.3" class="pilcrow">¶</a>
+</li>
+        </ul>
+<p id="section-13.3-3">
+          These questions require community feedback and operational
+          experience before standardization.<a href="#section-13.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="failure-modes">
+<section id="section-14">
+      <h2 id="name-failure-modes">
+<a href="#section-14" class="section-number selfRef">14. </a><a href="#name-failure-modes" class="section-name selfRef">Failure Modes</a>
+      </h2>
+<p id="section-14-1">
+        This section documents expected failure modes and recommended
+        responses during RASA deployment and operation.<a href="#section-14-1" class="pilcrow">¶</a></p>
+<div id="validation-failures">
+<section id="section-14.1">
+        <h3 id="name-signature-validation-failur">
+<a href="#section-14.1" class="section-number selfRef">14.1. </a><a href="#name-signature-validation-failur" class="section-name selfRef">Signature Validation Failures</a>
+        </h3>
+<p id="section-14.1-1">
+          When RASA signature validation fails, operators SHOULD:<a href="#section-14.1-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-14.1-2.1">
+            Fall back to IRR data for the affected AS-SET if configured
+            for backward compatibility.<a href="#section-14.1-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.1-2.2">
+            Log the validation failure with specific error details
+            (expired certificate, invalid signature, revocation, etc.).<a href="#section-14.1-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.1-2.3">
+            Alert operations staff if the failure affects critical
+            AS-SETs and strict RASA mode is enabled.<a href="#section-14.1-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.1-2.4">
+            Continue processing other AS-SETs; do not fail the entire
+            route filter generation.<a href="#section-14.1-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="repository-failures">
+<section id="section-14.2">
+        <h3 id="name-repository-availability-fai">
+<a href="#section-14.2" class="section-number selfRef">14.2. </a><a href="#name-repository-availability-fai" class="section-name selfRef">Repository Availability Failures</a>
+        </h3>
+<p id="section-14.2-1">
+          When RPKI repositories are unavailable:<a href="#section-14.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-14.2-2.1">
+            Use cached RASA data if available and within validity period.<a href="#section-14.2-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.2-2.2">
+            Fall back to IRR data with appropriate logging if cached
+            data is unavailable or expired.<a href="#section-14.2-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.2-2.3">
+            Retry repository queries with exponential backoff.<a href="#section-14.2-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.2-2.4">
+            Alert on persistent repository failures affecting validation.<a href="#section-14.2-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="policy-failures">
+<section id="section-14.3">
+        <h3 id="name-policy-violation-failures">
+<a href="#section-14.3" class="section-number selfRef">14.3. </a><a href="#name-policy-violation-failures" class="section-name selfRef">Policy Violation Failures</a>
+        </h3>
+<p id="section-14.3-1">
+          When RASA validation detects policy violations (unauthorized
+          AS-SET inclusion):<a href="#section-14.3-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-14.3-2.1">
+            Exclude the violating ASN from the route filter expansion.<a href="#section-14.3-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.3-2.2">
+            Log the violation with details of the unauthorized inclusion.<a href="#section-14.3-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.3-2.3">
+            Alert network operations if the violation involves high-value
+            AS-SETs or appears to be an attack.<a href="#section-14.3-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.3-2.4">
+            Provide configuration option to warn-only vs. reject
+            for gradual policy adoption.<a href="#section-14.3-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+<div id="chain-failures">
+<section id="section-14.4">
+        <h3 id="name-chain-protection-failures">
+<a href="#section-14.4" class="section-number selfRef">14.4. </a><a href="#name-chain-protection-failures" class="section-name selfRef">Chain Protection Failures</a>
+        </h3>
+<p id="section-14.4-1">
+          When an AS-SET in the expansion chain lacks protection:<a href="#section-14.4-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-14.4-2.1">
+            Process the chain normally if the unprotected AS-SET has
+            doNotInherit set (intentionally unprotected).<a href="#section-14.4-2.1" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.4-2.2">
+            Log a warning when encountering unprotected AS-SETs in
+            otherwise protected chains.<a href="#section-14.4-2.2" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.4-2.3">
+            Provide option to require full chain protection for
+            high-security environments.<a href="#section-14.4-2.3" class="pilcrow">¶</a>
+</li>
+          <li class="normal" id="section-14.4-2.4">
+            Document the specific unprotected AS-SETs for follow-up
+            with operators.<a href="#section-14.4-2.4" class="pilcrow">¶</a>
+</li>
+        </ul>
+</section>
+</div>
+</section>
+</div>
+<div id="iana">
+<section id="section-15">
+      <h2 id="name-iana-considerations">
+<a href="#section-15" class="section-number selfRef">15. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-15-1">
+        This document requests IANA to:<a href="#section-15-1" class="pilcrow">¶</a></p>
+<p id="section-15-2">
+        1. Register two RPKI Object Types:<a href="#section-15-2" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-15-3">
+<pre>
+Object Type: RASA-SET (RPKI AS-SET Membership)
+OID: { id-rpki 42 1 }
+Reference: This document
+Object Type: RASA-AUTH (RPKI AS-SET Authorization)
+OID: { id-rpki 42 2 }
+Reference: This document
+</pre><a href="#section-15-3" class="pilcrow">¶</a>
+</div>
+<p id="section-15-4">
+        2. Register file extensions and media types:<a href="#section-15-4" class="pilcrow">¶</a></p>
+<div class="lang-text sourcecode" id="section-15-5">
+<pre>
+File Extension: .rasa-set
+Media Type: application/rpki-rasa-set
+
+File Extension: .rasa-auth
+Media Type: application/rpki-rasa-auth
+</pre><a href="#section-15-5" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<section id="section-16">
+      <h2 id="name-references">
+<a href="#section-16" class="section-number selfRef">16. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<section id="section-16.1">
+        <h3 id="name-normative-references">
+<a href="#section-16.1" class="section-number selfRef">16.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <time datetime="1997" class="refDate">1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2119">https://www.rfc-editor.org/info/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC2622">[RFC2622]</dt>
+        <dd>
+<span class="refAuthor">Alaettinoglu, C.</span>, <span class="refAuthor">Villamizar, C.</span>, and <span class="refAuthor">E. Gerich</span>, <span class="refTitle">"Routing Policy Specification Language (RPSL)"</span>, <span class="seriesInfo">RFC 2622</span>, <time datetime="1999" class="refDate">1999</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc2622">https://www.rfc-editor.org/info/rfc2622</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC5652">[RFC5652]</dt>
+        <dd>
+<span class="refAuthor">Housley, R.</span>, <span class="refTitle">"Cryptographic Message Syntax (CMS)"</span>, <span class="seriesInfo">RFC 5652</span>, <time datetime="2009" class="refDate">2009</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc5652">https://www.rfc-editor.org/info/rfc5652</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6488">[RFC6488]</dt>
+        <dd>
+<span class="refAuthor">Huston, G.</span>, <span class="refAuthor">Michaelson, G.</span>, and <span class="refAuthor">R. Loomans</span>, <span class="refTitle">"Subject Key Identifier (SKI) for RPKI"</span>, <span class="seriesInfo">RFC 6488</span>, <time datetime="2012" class="refDate">2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc6488">https://www.rfc-editor.org/info/rfc6488</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <time datetime="2017" class="refDate">2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/info/rfc8174">https://www.rfc-editor.org/info/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+<section id="section-16.2">
+        <h3 id="name-informative-references">
+<a href="#section-16.2" class="section-number selfRef">16.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="I-D.aspa">[I-D.aspa]</dt>
+        <dd>
+<span class="refAuthor">Azimov, A.</span>, <span class="refTitle">"ASPA Profile"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-ietf-sidrops-aspa-profile</span>, <time datetime="2024" class="refDate">2024</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-ietf-sidrops-aspa-profile">https://datatracker.ietf.org/doc/html/draft-ietf-sidrops-aspa-profile</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.asgroup">[I-D.asgroup]</dt>
+        <dd>
+<span class="refAuthor">Snijders, J.</span> and <span class="refAuthor">F. Korsbäck</span>, <span class="refTitle">"RPKI ASGroup"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-spaghetti-sidrops-rpki-asgroup</span>, <time datetime="2022" class="refDate">2022</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-spaghetti-sidrops-rpki-asgroup">https://datatracker.ietf.org/doc/html/draft-spaghetti-sidrops-rpki-asgroup</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="I-D.member-of-as-set">[I-D.member-of-as-set]</dt>
+      <dd>
+<span class="refAuthor">Abrahamsson, M.</span>, <span class="refTitle">"Membership Verification for Autonomous System Sets"</span>, <span class="refContent">Work in Progress</span>, <span class="seriesInfo">Internet-Draft, draft-carbonara-irr-member-of-as-set</span>, <time datetime="2026" class="refDate">2026</time>, <span>&lt;<a href="https://datatracker.ietf.org/doc/html/draft-carbonara-irr-member-of-as-set">https://datatracker.ietf.org/doc/html/draft-carbonara-irr-member-of-as-set</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</section>
+<div id="authors-addresses">
+<section id="appendix-A">
+      <h2 id="name-authors-address">
+<a href="#name-authors-address" class="section-name selfRef">Author's Address</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Mikael Abrahamsson</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:swmike@swm.pp.se" class="email">swmike@swm.pp.se</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
