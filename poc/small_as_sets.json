@@ -1,0 +1,58 @@
+{
+  "description": "Small AS-SETs for fast testing and POC demonstrations",
+  "sets": [
+    {
+      "name": "AS-14061",
+      "description": "DigitalOcean - small hosting provider",
+      "expected_size": "4-5 ASNs",
+      "source": "RADB"
+    },
+    {
+      "name": "AS-GOOGLE", 
+      "description": "Google - medium size content provider",
+      "expected_size": "30-35 ASNs",
+      "source": "RADB"
+    },
+    {
+      "name": "AS-AMAZON",
+      "description": "Amazon AWS - medium size",
+      "expected_size": "20-30 ASNs",
+      "source": "RADB"
+    },
+    {
+      "name": "AS-MICROSOFT",
+      "description": "Microsoft - medium size",
+      "expected_size": "15-25 ASNs",
+      "source": "RADB"
+    },
+    {
+      "name": "AS-NETFLIX",
+      "description": "Netflix - small content provider",
+      "expected_size": "5-10 ASNs",
+      "source": "RADB"
+    },
+    {
+      "name": "AS-FACEBOOK",
+      "description": "Meta/Facebook - medium size",
+      "expected_size": "15-20 ASNs",
+      "source": "RADB"
+    },
+    {
+      "name": "AS-CLOUDFLARE",
+      "description": "Cloudflare - medium CDN",
+      "expected_size": "10-15 ASNs",
+      "source": "RADB"
+    },
+    {
+      "name": "AS2914:AS-US",
+      "description": "NTT US customers - large",
+      "expected_size": "200-300 ASNs",
+      "source": "RADB"
+    }
+  ],
+  "recommended_for_testing": [
+    "AS-14061",
+    "AS-GOOGLE",
+    "AS-NETFLIX"
+  ]
+}
