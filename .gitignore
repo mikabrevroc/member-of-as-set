@@ -1,3 +1,12 @@
+# Submodules (tracked separately)
+bgpq4/
+rpki-client-portable/
+openbsd/
+
+# Downloaded RPKI trust anchors (not test CA)
+/*.tal
+/*.constraints
+
 # Raw data that can be recreated
 networker-260222.log
 *.log
@@ -37,9 +46,11 @@ rasa-c/generated/*.c
 !rasa-c/generated/PropagationScope.c
 !rasa-c/generated/ASID.c
 
-# Test artifacts
-rasa-testdata/ca/
-rasa-testdata/objects/
+# Test artifacts - private keys and sensitive files
+rasa-testdata/ca/*.key
+rasa-testdata/ca/*.csr
+rasa-testdata/ca/*.srl
+rasa-testdata/ca/root.pub
 
 # Library files
 *.o
