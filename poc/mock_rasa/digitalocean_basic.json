@@ -1,0 +1,13 @@
+{
+  "description": "DigitalOcean basic RASA-AUTH with unrestricted propagation",
+  "scenario": "DigitalOcean authorizes inclusion in NTT's AS-SET",
+  "rasa_auth": {
+    "AS14061": {
+      "authorizedAS": 14061,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "unrestricted"}
+      ],
+      "strictMode": false
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "description": "DigitalOcean RASA-AUTH with strictMode - rejects unauthorized AS-SETs",
+  "scenario": "DigitalOcean authorizes NTT and Lumen, but NOT Arelion",
+  "rasa_auth": {
+    "AS14061": {
+      "authorizedAS": 14061,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "unrestricted"},
+        {"asSetName": "AS3356:AS-LEVEL3", "propagation": "unrestricted"}
+      ],
+      "strictMode": true
+    },
+    "AS46652": {
+      "authorizedAS": 46652,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "unrestricted"},
+        {"asSetName": "AS3356:AS-LEVEL3", "propagation": "unrestricted"}
+      ],
+      "strictMode": true
+    },
+    "AS393406": {
+      "authorizedAS": 393406,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "unrestricted"},
+        {"asSetName": "AS3356:AS-LEVEL3", "propagation": "unrestricted"}
+      ],
+      "strictMode": true
+    },
+    "AS394996": {
+      "authorizedAS": 394996,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "unrestricted"},
+        {"asSetName": "AS3356:AS-LEVEL3", "propagation": "unrestricted"}
+      ],
+      "strictMode": true
+    }
+  }
+}

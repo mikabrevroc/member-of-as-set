@@ -1,0 +1,21 @@
+{
+  "description": "Google AS-SET RASA-AUTH enforcing RADB-only",
+  "scenario": "Google publishes RASA-AUTH for AS-GOOGLE itself to enforce 'DO NOT USE, USE RADB AS-SET'",
+  "rasa_auth": {
+    "AS-GOOGLE": {
+      "rasaVersion": 1,
+      "authorizedEntity": {
+        "authorizedAS": 15169
+      },
+      "authorizedSet": "AS-GOOGLE",
+      "authorizedIn": [
+        {
+          "irrDatabase": "RADB",
+          "source": "RADB"
+        }
+      ],
+      "strictMode": true,
+      "comment": "DO NOT USE objects from other IRRs - USE RADB AS-SET ONLY"
+    }
+  }
+}

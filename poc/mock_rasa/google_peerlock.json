@@ -1,0 +1,34 @@
+{
+  "description": "Google RASA-AUTH with propagation=directOnly for peer-lock",
+  "scenario": "Google publishes RASA-AUTH with directOnly to prevent route propagation via peers",
+  "rasa_auth": {
+    "AS6432": {
+      "authorizedAS": 6432,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "directOnly"}
+      ],
+      "strictMode": false
+    },
+    "AS11344": {
+      "authorizedAS": 11344,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "directOnly"}
+      ],
+      "strictMode": false
+    },
+    "AS13949": {
+      "authorizedAS": 13949,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "directOnly"}
+      ],
+      "strictMode": false
+    },
+    "AS15169": {
+      "authorizedAS": 15169,
+      "authorizedIn": [
+        {"asSetName": "AS2914:AS-GLOBAL", "propagation": "directOnly"}
+      ],
+      "strictMode": false
+    }
+  }
+}
