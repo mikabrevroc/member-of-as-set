@@ -9,6 +9,8 @@ networker-260222.log
 # But DO include the RFC draft files for easy reading
 !draft-carbonara-irr-member-of-as-set-*.txt
 !draft-carbonara-irr-member-of-as-set-*.html
+!draft-carbonara-rpki-as-set-auth-*.txt
+!draft-carbonara-rpki-as-set-auth-*.html
 
 # Temporary files
 *.tmp
