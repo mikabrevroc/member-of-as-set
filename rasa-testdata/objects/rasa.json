@@ -1,0 +1,67 @@
+{
+  "metadata": {
+    "buildtime": "2026-02-23T19:08:34Z",
+    "rasas": 3,
+    "vrasas": 3,
+    "uniquevrasas": 3
+  },
+  "rasas": [
+    {
+      "rasa": {
+        "authorized_as": 64496,
+        "authorized_in": [
+          {
+            "entry": {
+              "asset": "AS-EXAMPLE",
+              "propagation": 0
+            }
+          },
+          {
+            "entry": {
+              "asset": "AS-GLOBAL",
+              "propagation": 0
+            }
+          }
+        ],
+        "expires": 1803409714,
+        "ta": "TEST"
+      }
+    },
+    {
+      "rasa": {
+        "authorized_as": 15169,
+        "authorized_in": [
+          {
+            "entry": {
+              "asset": "AS-GOOGLE",
+              "propagation": 0
+            }
+          }
+        ],
+        "expires": 1803409714,
+        "ta": "TEST"
+      }
+    },
+    {
+      "rasa": {
+        "authorized_as": 2914,
+        "authorized_in": [
+          {
+            "entry": {
+              "asset": "AS-NTT",
+              "propagation": 0
+            }
+          },
+          {
+            "entry": {
+              "asset": "AS-GLOBAL",
+              "propagation": 0
+            }
+          }
+        ],
+        "expires": 1803409714,
+        "ta": "TEST"
+      }
+    }
+  ]
+}
