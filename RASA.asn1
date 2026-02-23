@@ -26,19 +26,6 @@ RasaAuthFlags ::= BIT STRING {
     strictMode(0)
 }
 
--- Propagation scope for peer locking
-PropagationScope ::= ENUMERATED {
-    unrestricted(0),    -- Can be nested anywhere (default)
-    directOnly(1)       -- Peer lock signal
-}
-
--- Authorized entry with optional propagation constraint
-AuthorizedEntry ::= SEQUENCE {
-    asSetName        UTF8String,
-    propagation      PropagationScope OPTIONAL
-    -- If propagation is absent, defaults to unrestricted
-}
-
 -- RASA-SET content
 RasaSetContent ::= SEQUENCE {
   version          [0] INTEGER DEFAULT 0,
@@ -53,13 +40,13 @@ RasaSetContent ::= SEQUENCE {
 }
 
 -- RASA-AUTH content
+-- authorizedAS and authorizedSet are mutually exclusive
+-- Using explicit tags to avoid CHOICE type (simpler OpenSSL integration)
 RasaAuthContent ::= SEQUENCE {
   version          [0] INTEGER DEFAULT 0,
-  authorizedEntity CHOICE {
-     authorizedAS        ASID,
-     authorizedSet       UTF8String
-  },
-  authorizedIn         SEQUENCE OF AuthorizedEntry,
+  authorizedAS     [1] ASID OPTIONAL,
+  authorizedSet    [2] UTF8String OPTIONAL,
+  authorizedIn         SEQUENCE OF UTF8String,
   flags                RasaAuthFlags OPTIONAL,
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime
