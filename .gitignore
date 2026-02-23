@@ -23,3 +23,25 @@ networker-260222.log
 # Dependencies (if any)
 node_modules/
 __pycache__/
+
+
+# RASA C Library build artifacts
+rasa-c/build/
+rasa-c/librasa.a
+rasa-c/generated/*.c
+!rasa-c/generated/RasaSetContent.c
+!rasa-c/generated/RasaAuthContent.c
+!rasa-c/generated/RasaFlags.c
+!rasa-c/generated/RasaAuthFlags.c
+!rasa-c/generated/AuthorizedEntry.c
+!rasa-c/generated/PropagationScope.c
+!rasa-c/generated/ASID.c
+
+# Test artifacts
+rasa-testdata/ca/
+rasa-testdata/objects/
+
+# Library files
+*.o
+*.so
+*.dylib
