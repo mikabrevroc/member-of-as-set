@@ -1,0 +1,52 @@
+{
+  "rasa_sets": [
+    {
+      "rasa_set": {
+        "version": 0,
+        "as_set_name": "AS64496:AS-CUSTOMERS",
+        "containing_as": 64496,
+        "members": [65001, 65002],
+        "nested_sets": ["AS-LEGACY"],
+        "irr_source": "RADB",
+        "fallback_mode": "irrFallback",
+        "flags": [],
+        "not_before": "2024-01-01T00:00:00Z",
+        "not_after": "2025-01-01T00:00:00Z"
+      }
+    }
+  ],
+  "rasas": [
+    {
+      "rasa": {
+        "version": 0,
+        "authorized_as": 65001,
+        "authorized_set": null,
+        "authorized_in": [
+          {
+            "asset": "AS64496:AS-CUSTOMERS",
+            "propagation": 0
+          }
+        ],
+        "flags": [],
+        "not_before": "2024-01-01T00:00:00Z",
+        "not_after": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "rasa": {
+        "version": 0,
+        "authorized_as": 65002,
+        "authorized_set": null,
+        "authorized_in": [
+          {
+            "asset": "AS64496:AS-CUSTOMERS",
+            "propagation": 0
+          }
+        ],
+        "flags": [],
+        "not_before": "2024-01-01T00:00:00Z",
+        "not_after": "2025-01-01T00:00:00Z"
+      }
+    }
+  ]
+}

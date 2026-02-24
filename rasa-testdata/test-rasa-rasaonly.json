@@ -1,0 +1,18 @@
+{
+  "rasa_sets": [
+    {
+      "rasa_set": {
+        "version": 0,
+        "as_set_name": "AS65000:AS-NETWORK",
+        "containing_as": 65000,
+        "members": [65001, 65002, 65003],
+        "nested_sets": [],
+        "irr_source": null,
+        "fallback_mode": "rasaOnly",
+        "flags": [],
+        "not_before": "2024-01-01T00:00:00Z",
+        "not_after": "2025-01-01T00:00:00Z"
+      }
+    }
+  ]
+}

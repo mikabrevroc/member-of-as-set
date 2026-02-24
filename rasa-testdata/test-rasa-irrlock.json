@@ -1,0 +1,18 @@
+{
+  "rasa_sets": [
+    {
+      "rasa_set": {
+        "version": 0,
+        "as_set_name": "AS2914:AS-GLOBAL",
+        "containing_as": 2914,
+        "members": [],
+        "nested_sets": [],
+        "irr_source": "RADB",
+        "fallback_mode": "irrLock",
+        "flags": [],
+        "not_before": "2024-01-01T00:00:00Z",
+        "not_after": "2025-01-01T00:00:00Z"
+      }
+    }
+  ]
+}
