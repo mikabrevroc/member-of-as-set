@@ -26,6 +26,28 @@ RasaAuthFlags ::= BIT STRING {
     strictMode(0)
 }
 
+-- Fallback mode for RASA-SET
+-- Controls how tools handle IRR fallback when RASA-SET is present
+FallbackMode ::= ENUMERATED {
+    irrFallback(0),    -- Merge RASA members with IRR query (default)
+    irrLock(1),        -- Lock to specific IRR database only
+    rasaOnly(2)        -- Use only RASA data, ignore IRR
+}
+
+-- Propagation scope for peer locking
+PropagationScope ::= ENUMERATED {
+    unrestricted(0),    -- Can be nested anywhere (default)
+    directOnly(1)       -- Only direct inclusion, no nesting/transit
+}
+
+-- Authorized entry with propagation constraint
+-- Used in RASA-AUTH authorizedIn field
+AuthorizedEntry ::= SEQUENCE {
+    asSetName        UTF8String,
+    propagation      PropagationScope OPTIONAL
+    -- If propagation is absent, defaults to unrestricted
+}
+
 -- RASA-SET content
 RasaSetContent ::= SEQUENCE {
   version          [0] INTEGER DEFAULT 0,
@@ -34,6 +56,7 @@ RasaSetContent ::= SEQUENCE {
   members              SEQUENCE OF ASID,
   nestedSets           SEQUENCE OF UTF8String OPTIONAL,
   irrSource            UTF8String OPTIONAL,
+  fallbackMode         FallbackMode DEFAULT irrFallback,
   flags                RasaFlags OPTIONAL,
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime
@@ -46,7 +69,7 @@ RasaAuthContent ::= SEQUENCE {
   version          [0] INTEGER DEFAULT 0,
   authorizedAS     [1] ASID OPTIONAL,
   authorizedSet    [2] UTF8String OPTIONAL,
-  authorizedIn         SEQUENCE OF UTF8String,
+  authorizedIn         SEQUENCE OF AuthorizedEntry,
   flags                RasaAuthFlags OPTIONAL,
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime

@@ -583,6 +583,13 @@ RasaAuthFlags ::= BIT STRING {
 }
           </sourcecode>
           <sourcecode type="text">
+-- Fallback mode for RASA-SET
+FallbackMode ::= ENUMERATED {
+    irrFallback(0),    -- Use IRR alongside RASA (default)
+    irrLock(1),        -- Lock to specific IRR database only
+    rasaOnly(2)        -- Use only RASA data, ignore IRR
+}
+
 -- Propagation scope for peer locking
 PropagationScope ::= ENUMERATED {
     unrestricted(0),    -- Can be nested anywhere (default)
@@ -604,6 +611,7 @@ RasaSetContent ::= SEQUENCE {
   members              SEQUENCE OF ASID,
   nestedSets           SEQUENCE OF UTF8String OPTIONAL,
   irrSource            UTF8String OPTIONAL,
+  fallbackMode         FallbackMode DEFAULT irrFallback,
   flags                RasaFlags OPTIONAL,
   notBefore            GeneralizedTime,
   notAfter             GeneralizedTime
@@ -642,7 +650,29 @@ RasaSetContent ::= SEQUENCE {
             <dt>irrSource:</dt>
             <dd>
               OPTIONAL authoritative IRR database for this AS-SET (e.g.,
-              "RADB", "RIPE"). Prevents namespace ambiguity.
+              "RADB", "RIPE"). Prevents namespace ambiguity. Required when
+              fallbackMode is irrLock.
+            </dd>
+            <dt>fallbackMode:</dt>
+            <dd>
+              Controls how tools handle IRR fallback. Values:
+              <ul spacing="normal">
+                <li>
+                  <strong>irrFallback(0)</strong>: Default. Merge RASA members
+                  with IRR query results. Supports gradual migration.
+                </li>
+                <li>
+                  <strong>irrLock(1)</strong>: Lock to specific IRR database
+                  (specified by irrSource). Tools query only the locked database.
+                  Members sequence MUST be empty. Enables cryptographic assurance
+                  of data source without maintaining duplicate AS-SETs.
+                </li>
+                <li>
+                  <strong>rasaOnly(2)</strong>: Use only RASA data, no IRR queries.
+                  Members sequence MUST be non-empty. Complete RASA replacement
+                  of IRR AS-SETs.
+                </li>
+              </ul>
             </dd>
             <dt>flags:</dt>
             <dd>
@@ -765,6 +795,104 @@ RasaAuthContent ::= SEQUENCE {
           owner can authorize inclusion, preventing AS-SET owners from
           claiming unauthorized membership.
         </t>
+      </section>
+
+      <section anchor="fallback-mode">
+        <name>fallbackMode Behavior</name>
+        <t>
+          The fallbackMode field in RASA-SET controls how tools interact with
+          IRR databases, enabling three distinct deployment models.
+        </t>
+
+        <section anchor="fallback-irrFallback">
+          <name>irrFallback Mode (Default)</name>
+          <t>
+            In irrFallback mode (value 0), tools merge RASA-SET members with
+            IRR query results. This is the default behavior and supports
+            gradual migration from IRR to RASA.
+          </t>
+          <sourcecode type="text">
+Example: RASA-SET with members and IRR fallback
+  members: [AS65001, AS65002]  -- RASA-managed customers
+  nestedSets: ["AS-LEGACY"]
+  fallbackMode: irrFallback
+  
+Result: Tool queries IRR, merges with RASA members
+  Final members = RASA members + IRR members + nested sets
+          </sourcecode>
+        </section>
+
+        <section anchor="fallback-irrLock">
+          <name>irrLock Mode (IRR Database Lock)</name>
+          <t>
+            In irrLock mode (value 1), the RASA-SET acts as a cryptographic
+            lock on a specific IRR database. Tools MUST query ONLY the
+            specified IRR database (via irrSource field) and reject the same
+            AS-SET from other databases. This mode requires:
+          </t>
+          <ul spacing="normal">
+            <li>Empty members sequence (no explicit members)</li>
+            <li>Empty or absent nestedSets</li>
+            <li>Valid irrSource field specifying the database</li>
+          </ul>
+          <t>
+            Use Case: AS2914 has AS2914:AS-GLOBAL in RADB. They publish a
+            RASA-SET with irrLock and irrSource=RADB. RASA-aware tools will
+            only accept AS2914:AS-GLOBAL from RADB, rejecting versions from
+            RIPE, ARIN, or other databases. This provides cryptographic
+            assurance without requiring AS2914 to maintain duplicate AS-SETs.
+          </t>
+          <sourcecode type="text">
+Example: IRR Database Lock for AS2914
+  asSetName: "AS2914:AS-GLOBAL"
+  containingAS: 2914
+  members: []                   -- MUST be empty
+  nestedSets: []                -- MUST be empty
+  irrSource: "RADB"             -- Lock to RADB only
+  fallbackMode: irrLock         -- Lock mode
+  
+Result: Tool queries ONLY RADB for this AS-SET
+  Rejects AS2914:AS-GLOBAL from RIPE, ARIN, etc.
+          </sourcecode>
+        </section>
+
+        <section anchor="fallback-rasaOnly">
+          <name>rasaOnly Mode (RASA Replacement)</name>
+          <t>
+            In rasaOnly mode (value 2), tools use only RASA data and do not
+            query IRR databases. This mode requires a non-empty members
+            sequence and represents complete RASA replacement of IRR AS-SETs.
+          </t>
+          <sourcecode type="text">
+Example: Pure RASA deployment
+  asSetName: "AS65000:AS-NETWORK"
+  containingAS: 65000
+  members: [AS65001, AS65002, AS65003]  -- MUST be non-empty
+  fallbackMode: rasaOnly       -- No IRR queries
+  
+Result: Tool uses only RASA data
+  No IRR database queries performed
+          </sourcecode>
+        </section>
+
+        <section anchor="fallback-validation">
+          <name>Validation Rules</name>
+          <t>
+            Tools validating RASA-SET objects MUST enforce these constraints:
+          </t>
+          <ul spacing="normal">
+            <li>
+              If fallbackMode is irrLock: members MUST be empty,
+              nestedSets MUST be empty or absent, and irrSource MUST be present.
+            </li>
+            <li>
+              If fallbackMode is rasaOnly: members MUST contain at least one entry.
+            </li>
+            <li>
+              If fallbackMode is irrFallback: No additional constraints.
+            </li>
+          </ul>
+        </section>
       </section>
     </section>
 
